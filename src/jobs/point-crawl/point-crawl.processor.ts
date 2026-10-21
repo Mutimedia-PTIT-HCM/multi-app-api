@@ -39,7 +39,7 @@ export class PointCrawlProcessor extends WorkerHost implements OnModuleInit {
     super();
   }
 
-  async onModuleInit() {
+  async onModuleInit(): Promise<void> {
     // Đăng ký repeatable job mỗi giờ (idempotent)
     await this.queue.upsertJobScheduler(
       "hourly-point-crawl",
@@ -53,7 +53,7 @@ export class PointCrawlProcessor extends WorkerHost implements OnModuleInit {
     if (job.name === "crawl-one") return this.crawlOne(job.data.studentCode);
   }
 
-  private async crawlAll() {
+  private async crawlAll(): Promise<void> {
     const students: StudentCodeRow[] = await this.prisma.student.findMany({
       where: { uisRefreshToken: { not: null } },
       select: { studentCode: true },
@@ -68,7 +68,7 @@ export class PointCrawlProcessor extends WorkerHost implements OnModuleInit {
     this.logger.log(`Fan-out ${students.length} crawl-one jobs`);
   }
 
-  private async crawlOne(studentCode: string) {
+  private async crawlOne(studentCode: string): Promise<void> {
     let session: UisSession;
     try {
       session = await this.session.getSession(studentCode);

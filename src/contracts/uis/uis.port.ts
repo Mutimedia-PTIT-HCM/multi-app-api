@@ -3,6 +3,7 @@ import type {
   ScheduleDay,
   SemesterPoint,
   UisLoginResult,
+  UisSemesterWeeks,
   UisSession,
   UisStudentInfo,
   UisTokens,
@@ -14,11 +15,7 @@ export interface IUisService {
   refresh(username: string, refreshToken: string): Promise<UisTokens | "unreachable" | null>;
   oauthLogin(username: string, password: string): Promise<string | null>;
   getStudentInfo(session: UisSession): Promise<UisStudentInfo>;
-  getSemesterWeeks(
-    session: UisSession,
-    semesterCode: string,
-    currentDate: Date,
-  ): Promise<{ totalWeeks: number; currentWeek: number }>;
+  getSemesterWeeks(session: UisSession, semesterCode: string, currentDate: Date): Promise<UisSemesterWeeks>;
   getWeekSchedule(session: UisSession, semesterCode: string, week: number): Promise<ScheduleDay[]>;
   getAllPoints(session: UisSession): Promise<SemesterPoint[]>;
   getRecentGpa(session: UisSession): Promise<RecentGpa[]>;

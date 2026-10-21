@@ -193,7 +193,7 @@ export class TrainingPointsService implements ITrainingPointsService {
     return me.classCode;
   }
 
-  private async assertClassOpen(studentCode: string) {
+  private async assertClassOpen(studentCode: string): Promise<void> {
     const classCode = await this.getMyClassCode(studentCode);
     const status: TrainingPointStatus | null = await this.prisma.trainingPointStatus.findUnique({
       where: { classCode },
@@ -202,7 +202,7 @@ export class TrainingPointsService implements ITrainingPointsService {
       throw new AppException(HttpStatus.BAD_REQUEST, TRAINING_POINT_ERRORS.SUBMISSION_CLOSED);
   }
 
-  private async assertSameClass(chiefCode: string, studentCode: string) {
+  private async assertSameClass(chiefCode: string, studentCode: string): Promise<void> {
     const [chief, student]: [ClassCodeRow | null, ClassCodeRow | null] = await Promise.all([
       this.prisma.student.findUnique({ where: { studentCode: chiefCode }, select: { classCode: true } }),
       this.prisma.student.findUnique({ where: { studentCode }, select: { classCode: true } }),

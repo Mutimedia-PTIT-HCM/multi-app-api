@@ -29,7 +29,7 @@ export class SemesterSyncService implements ISemesterSyncService {
   ) {}
 
   @Cron("0 0 * * *")
-  async checkSemester() {
+  async checkSemester(): Promise<void> {
     try {
       const current = await this.system.getCurrentSemester();
       const next = this.system.nextSemester(current);

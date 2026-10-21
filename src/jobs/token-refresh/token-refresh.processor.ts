@@ -27,7 +27,7 @@ export class TokenRefreshProcessor extends WorkerHost implements OnModuleInit {
     super();
   }
 
-  async onModuleInit() {
+  async onModuleInit(): Promise<void> {
     await this.queue.upsertJobScheduler(
       "5h-token-renew",
       { pattern: "0 */5 * * *" },
@@ -40,7 +40,7 @@ export class TokenRefreshProcessor extends WorkerHost implements OnModuleInit {
     if (job.name === "renew-one") return this.renewOne(job.data.studentCode);
   }
 
-  private async renewAll() {
+  private async renewAll(): Promise<void> {
     const students: StudentCodeRow[] = await this.prisma.student.findMany({
       where: { uisRefreshToken: { not: null } },
       select: { studentCode: true },
@@ -55,7 +55,7 @@ export class TokenRefreshProcessor extends WorkerHost implements OnModuleInit {
     this.logger.log(`Fan-out ${students.length} renew-one jobs`);
   }
 
-  private async renewOne(studentCode: string) {
+  private async renewOne(studentCode: string): Promise<void> {
     const ok = await this.session.forceRenew(studentCode);
     if (!ok) this.logger.warn(`renew UIS tokens failed: ${studentCode}`);
   }

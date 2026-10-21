@@ -3,6 +3,7 @@ import type {
   PaginatedResult,
   PaginationQuery,
   PublicStudent,
+  StudentProfileUpdate,
   StudentSearchItem,
   UploadedFilePayload,
 } from "@app-type";
@@ -16,14 +17,7 @@ export interface IStudentsService {
   ): Promise<PaginatedResult<StudentSearchItem>>;
   updateProfile(
     studentCode: string,
-    fields: {
-      facebook?: string;
-      personalEmail?: string;
-      phone?: string;
-      hidePersonalEmail?: boolean;
-      hideFacebook?: boolean;
-      hidePhone?: boolean;
-    },
+    fields: StudentProfileUpdate,
     avatarFile?: UploadedFilePayload,
   ): Promise<void>;
   getClassMembers(studentCode: string, q: PaginationQuery): Promise<PaginatedResult<ClassMember>>;

@@ -197,7 +197,7 @@ export class ProductsService implements IProductsService {
     await this.prisma.order.update({ where: { orderCode }, data: { status: 1 } });
   }
 
-  private async getOrderOr404(orderCode: string) {
+  private async getOrderOr404(orderCode: string): Promise<OrderWithProductRow> {
     const order: OrderWithProductRow | null = await this.prisma.order.findUnique({
       where: { orderCode },
       include: { product: true },
@@ -206,7 +206,7 @@ export class ProductsService implements IProductsService {
     return order;
   }
 
-  private async assertSeller(orderCode: string, studentCode: string) {
+  private async assertSeller(orderCode: string, studentCode: string): Promise<void> {
     const order = await this.getOrderOr404(orderCode);
     if (order.product.sellerCode !== studentCode) {
       throw new AppException(HttpStatus.FORBIDDEN, PRODUCT_ERRORS.ORDER_FORBIDDEN);

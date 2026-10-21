@@ -1,6 +1,6 @@
 import { AppException, UPLOAD_ERRORS } from "@app-common";
 import { IStorageService, IUploadsService, STORAGE_PORT } from "@app-contracts";
-import { PresignedUpload, UploadPurpose } from "@app-type";
+import { PresignedUpload, UploadedKey, UploadPurpose } from "@app-type";
 import { HttpStatus, Inject, Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { JwtService } from "@nestjs/jwt";
@@ -58,7 +58,7 @@ export class UploadsService implements IUploadsService {
   }
 
   /** Endpoint local-only: nhận binary body theo token đã ký và ghi vào storage. */
-  async receiveLocalUpload(token: string, body: Buffer | undefined): Promise<{ key: string }> {
+  async receiveLocalUpload(token: string, body: Buffer | undefined): Promise<UploadedKey> {
     if (this.storage.isS3()) {
       throw new AppException(HttpStatus.NOT_FOUND, UPLOAD_ERRORS.STORAGE_NOT_CONFIGURED);
     }

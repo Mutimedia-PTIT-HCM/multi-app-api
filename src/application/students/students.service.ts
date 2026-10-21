@@ -15,6 +15,7 @@ import {
   PaginatedResult,
   PaginationQuery,
   PublicStudent,
+  StudentProfileUpdate,
   StudentSearchItem,
   StudentSearchRow,
   UploadedFilePayload,
@@ -65,14 +66,7 @@ export class StudentsService implements IStudentsService {
 
   async updateProfile(
     studentCode: string,
-    fields: {
-      facebook?: string;
-      personalEmail?: string;
-      phone?: string;
-      hidePersonalEmail?: boolean;
-      hideFacebook?: boolean;
-      hidePhone?: boolean;
-    },
+    fields: StudentProfileUpdate,
     avatarFile?: UploadedFilePayload,
   ): Promise<void> {
     let avatarKey: string | undefined;

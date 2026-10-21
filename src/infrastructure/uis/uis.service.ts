@@ -5,8 +5,13 @@ import {
   SemesterPoint,
   SubjectPoint,
   UisLoginResult,
+  UisRawSemesterPoint,
+  UisRawSubjectPoint,
+  UisRawWeek,
+  UisSemesterWeeks,
   UisSession,
   UisStudentInfo,
+  UisTokenResponse,
   UisTokens,
 } from "@app-type";
 import { Injectable, Logger } from "@nestjs/common";
@@ -108,7 +113,7 @@ export class UisService implements IUisService {
     };
   }
 
-  private async getRawWeekSchedule(session: UisSession, semesterCode: string): Promise<any[]> {
+  private async getRawWeekSchedule(session: UisSession, semesterCode: string): Promise<UisRawWeek[]> {
     const res = await axios.post(
       `${UIS_BASE}/sch/w-locdstkbtuanusertheohocky`,
       { filter: { hoc_ky: semesterCode } },
@@ -117,7 +122,7 @@ export class UisService implements IUisService {
     return res.data.data?.ds_tuan_tkb ?? [];
   }
 
-  private async getRawPoints(session: UisSession): Promise<any[]> {
+  private async getRawPoints(session: UisSession): Promise<UisRawSemesterPoint[]> {
     const res = await axios.post(`${UIS_BASE}/srm/w-locdsdiemsinhvien`, null, {
       headers: this.authHeaders(session),
       timeout: REQUEST_TIMEOUT,
@@ -128,7 +133,11 @@ export class UisService implements IUisService {
   // ===================== NORMALIZED QUERIES =====================
 
   /** Số tuần trong học kỳ + tuần hiện tại theo ngày cho trước. */
-  async getSemesterWeeks(session: UisSession, semesterCode: string, currentDate: Date) {
+  async getSemesterWeeks(
+    session: UisSession,
+    semesterCode: string,
+    currentDate: Date,
+  ): Promise<UisSemesterWeeks> {
     const weeks = await this.getRawWeekSchedule(session, semesterCode);
     let currentWeek = 0;
     weeks.forEach((w: any, i: number) => {
@@ -183,7 +192,7 @@ export class UisService implements IUisService {
       const sem = raw[i];
       const hk = String(sem.hoc_ky ?? "");
       if (hk.length < 5) continue;
-      const subjects: SubjectPoint[] = (sem.ds_diem_mon_hoc ?? []).map((m: any) => {
+      const subjects: SubjectPoint[] = (sem.ds_diem_mon_hoc ?? []).map((m: UisRawSubjectPoint) => {
         const comp: Record<string, number> = {};
         for (const c of m.ds_diem_thanh_phan ?? []) {
           comp[c.ky_hieu] = parseFloat(c.diem_thanh_phan);
@@ -213,7 +222,7 @@ export class UisService implements IUisService {
   /** GPA 2 học kỳ gần nhất (job notify). */
   async getRecentGpa(session: UisSession): Promise<RecentGpa[]> {
     const raw = await this.getRawPoints(session);
-    return raw.slice(0, 2).map((sem: any) => {
+    return raw.slice(0, 2).map((sem: UisRawSemesterPoint) => {
       const hk = String(sem.hoc_ky);
       return {
         year: parseInt(hk.slice(0, 4), 10),
@@ -236,7 +245,7 @@ export class UisService implements IUisService {
 
   // ===================== HELPERS =====================
 
-  private parseTokens(data: any): UisTokens | null {
+  private parseTokens(data: UisTokenResponse): UisTokens | null {
     const accessToken = data?.access_token;
     const refreshToken = data?.refresh_token;
     const expiresIn = Number(data?.expires_in);
@@ -246,7 +255,7 @@ export class UisService implements IUisService {
     return { accessToken, refreshToken, expiresAt };
   }
 
-  private authHeaders(session: UisSession, contentType = "application/json") {
+  private authHeaders(session: UisSession, contentType = "application/json"): Record<string, string> {
     return {
       Authorization: `Bearer ${session.accessToken}`,
       "Content-Type": contentType,

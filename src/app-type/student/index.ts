@@ -6,6 +6,7 @@ export * from "./class-member-row.type";
 export * from "./public-student.type";
 export * from "./refresh-token-row.type";
 export * from "./student-code-row.type";
+export * from "./student-profile-update.type";
 export * from "./student-search-item.type";
 export * from "./student-search-row.type";
 export * from "./uis-token-row.type";
