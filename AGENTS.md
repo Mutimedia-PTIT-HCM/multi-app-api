@@ -42,6 +42,13 @@ legacy/                   # code Express cũ + multidb.sql — READ ONLY
 
 - Envelope success: `{ error: false, message, data }` — `ResponseInterceptor` tự wrap; controller trả `ApiResult(message, data)` hoặc raw data (message mặc định "Thành công").
 - List endpoint BẮT BUỘC phân trang: nhận `@Query() q: PaginationQueryDto` (`?page=&limit=`, default 1/20, max 100); service dùng `toPrismaPage(q)` (skip/take) + `count` và trả `toPaginated(items, total, q)` → `data: { items, meta: { page, limit, total, totalPages } }`. KHÔNG trả mảng trần.
+
+## API docs (Swagger `/api/docs`)
+
+- Mọi controller: `@ApiTags`; mọi route: `@ApiOperation({summary})`; route có guard: `@ApiBearerAuth()`; route public (login): KHÔNG gắn.
+- Endpoint multipart (upload): `@ApiConsumes("multipart/form-data")` + `@ApiBody({schema})` với field `format: "binary"` để Swagger UI render file picker.
+- DTO luôn có `@ApiProperty`/`@ApiPropertyOptional` kèm `example` để test được ngay trong Swagger UI.
+- Route infra (health, static file) dùng `@ApiExcludeEndpoint()` để không lọt vào docs.
 - Thêm export mới → export qua `index.ts` của thư mục.
 - Import cùng thư mục (`./foo`, `./dto/foo`) giữ nguyên relative.
 - tsconfig `paths: {"@app-type": ["./src/app-type"], "@app-*": ["./src/*"]}`; sau `tsc`, `scripts/fix-dist-paths.js` rewrite `require("@app-...")` trong dist (đã gắn trong `npm run build`) — prefix `@app-` không trùng npm scoped packages.

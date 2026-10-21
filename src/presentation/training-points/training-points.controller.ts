@@ -14,9 +14,12 @@ import {
   UseInterceptors,
 } from "@nestjs/common";
 import { FilesInterceptor } from "@nestjs/platform-express";
+import { ApiBearerAuth, ApiBody, ApiConsumes, ApiOperation, ApiParam, ApiTags } from "@nestjs/swagger";
 import { ReviewPointDto, SelfAssessDto, ToggleStatusDto } from "./dto";
 
 /** Điểm rèn luyện — tự chấm (student) + duyệt (chief). */
+@ApiTags("Training Points")
+@ApiBearerAuth()
 @Controller("training-points")
 export class TrainingPointsController {
   constructor(private readonly service: TrainingPointsService) {}
@@ -25,6 +28,7 @@ export class TrainingPointsController {
 
   /** Form tiêu chí + điểm của mình. */
   @Get("form")
+  @ApiOperation({ summary: "Form tiêu chí + điểm của mình" })
   @UseGuards(StudentAuthGuard)
   async getForm(@CurrentUser("studentCode") code: string) {
     try {
@@ -36,6 +40,7 @@ export class TrainingPointsController {
 
   /** SV tự chấm. */
   @Post("self")
+  @ApiOperation({ summary: "SV tự chấm điểm 1 tiêu chí" })
   @UseGuards(StudentAuthGuard)
   async selfAssess(@CurrentUser("studentCode") code: string, @Body() dto: SelfAssessDto) {
     try {
@@ -48,6 +53,18 @@ export class TrainingPointsController {
 
   /** Upload minh chứng (multipart: files[] + title). */
   @Post("certificates")
+  @ApiOperation({ summary: "Upload minh chứng (multipart: files[] + title)" })
+  @ApiConsumes("multipart/form-data")
+  @ApiBody({
+    schema: {
+      type: "object",
+      required: ["title", "files"],
+      properties: {
+        title: { type: "string" },
+        files: { type: "array", items: { type: "string", format: "binary" } },
+      },
+    },
+  })
   @UseGuards(StudentAuthGuard)
   @UseInterceptors(FilesInterceptor("files", 10, { limits: { fileSize: 10 * 1024 * 1024 } }))
   async uploadCert(
@@ -65,6 +82,7 @@ export class TrainingPointsController {
 
   /** Minh chứng của mình (sự kiện đã check-in + cert upload). */
   @Get("certificates")
+  @ApiOperation({ summary: "Minh chứng của mình (sự kiện + cert upload)" })
   @UseGuards(StudentAuthGuard)
   async getCerts(@CurrentUser("studentCode") code: string) {
     try {
@@ -77,6 +95,7 @@ export class TrainingPointsController {
   // ---------- Chief ----------
 
   @Get("status")
+  @ApiOperation({ summary: "Trạng thái mở/khoá chấm điểm của lớp (chief)" })
   @UseGuards(ChiefAuthGuard)
   async getStatus(@CurrentUser("studentCode") code: string) {
     try {
@@ -87,6 +106,7 @@ export class TrainingPointsController {
   }
 
   @Post("status")
+  @ApiOperation({ summary: "Mở/khoá chấm điểm cho lớp (chief)" })
   @UseGuards(ChiefAuthGuard)
   async setStatus(@CurrentUser("studentCode") code: string, @Body() dto: ToggleStatusDto) {
     try {
@@ -99,6 +119,7 @@ export class TrainingPointsController {
 
   /** Điểm cả lớp (1 query). */
   @Get("class")
+  @ApiOperation({ summary: "Điểm rèn luyện cả lớp (chief)" })
   @UseGuards(ChiefAuthGuard)
   async getClassPoints(@CurrentUser("studentCode") code: string) {
     try {
@@ -110,6 +131,8 @@ export class TrainingPointsController {
 
   /** Điểm 1 SV trong lớp. */
   @Get("students/:studentCode")
+  @ApiOperation({ summary: "Điểm 1 SV trong lớp (chief)" })
+  @ApiParam({ name: "studentCode", example: "N18DCPT064" })
   @UseGuards(ChiefAuthGuard)
   async getStudentPoints(@Param("studentCode") studentCode: string) {
     try {
@@ -124,6 +147,7 @@ export class TrainingPointsController {
 
   /** Minh chứng của 1 SV trong lớp. */
   @Get("students/:studentCode/certificates")
+  @ApiOperation({ summary: "Minh chứng của 1 SV trong lớp (chief)" })
   @UseGuards(ChiefAuthGuard)
   async getStudentCerts(@Param("studentCode") studentCode: string) {
     try {
@@ -138,6 +162,7 @@ export class TrainingPointsController {
 
   /** Chief chấm điểm cho SV. */
   @Post("review")
+  @ApiOperation({ summary: "Chief chấm điểm cho SV" })
   @UseGuards(ChiefAuthGuard)
   async review(@CurrentUser("studentCode") code: string, @Body() dto: ReviewPointDto) {
     try {
@@ -149,6 +174,7 @@ export class TrainingPointsController {
   }
 
   @Delete(":pointId")
+  @ApiOperation({ summary: "Xoá 1 điểm (chief)" })
   @UseGuards(ChiefAuthGuard)
   async deletePoint(
     @CurrentUser("studentCode") code: string,
@@ -164,6 +190,7 @@ export class TrainingPointsController {
 
   /** Reset điểm + minh chứng cả lớp (role 3/4). */
   @Post("reset")
+  @ApiOperation({ summary: "Reset điểm + minh chứng cả lớp — role 3/4 (chief)" })
   @UseGuards(ChiefAuthGuard)
   async reset(@CurrentUser("studentCode") code: string, @CurrentUser("role") role: number) {
     try {

@@ -2,7 +2,10 @@ import { SystemService } from "@app-application/system";
 import { AppException, CurrentUser, rethrowError, SCHEDULE_ERRORS, StudentAuthGuard } from "@app-common";
 import { UisService, UisSessionService } from "@app-infra/uis";
 import { Controller, Get, HttpStatus, Param, ParseIntPipe, Query, UseGuards } from "@nestjs/common";
+import { ApiBearerAuth, ApiOperation, ApiQuery, ApiTags } from "@nestjs/swagger";
 
+@ApiTags("Schedule")
+@ApiBearerAuth()
 @Controller("schedule")
 @UseGuards(StudentAuthGuard)
 export class ScheduleController {
@@ -14,6 +17,8 @@ export class ScheduleController {
 
   /** Số tuần của học kỳ hiện tại + tuần hiện tại — ?date=dd/mm/yyyy */
   @Get("weeks")
+  @ApiOperation({ summary: "Số tuần của học kỳ hiện tại + tuần hiện tại" })
+  @ApiQuery({ name: "date", required: false, example: "20/10/2025", description: "dd/mm/yyyy" })
   async getWeeks(@CurrentUser("studentCode") code: string, @Query("date") date?: string) {
     try {
       const sess = await this.session.getSession(code);
@@ -31,6 +36,8 @@ export class ScheduleController {
 
   /** TKB chi tiết 1 tuần. */
   @Get("weeks/:week")
+  @ApiOperation({ summary: "TKB chi tiết 1 tuần" })
+  @ApiQuery({ name: "date", required: false, description: "dd/mm/yyyy" })
   async getWeek(
     @CurrentUser("studentCode") code: string,
     @Param("week", ParseIntPipe) week: number,

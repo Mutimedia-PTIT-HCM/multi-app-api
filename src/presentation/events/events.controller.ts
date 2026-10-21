@@ -22,8 +22,11 @@ import {
   UseInterceptors,
 } from "@nestjs/common";
 import { FileInterceptor } from "@nestjs/platform-express";
+import { ApiBearerAuth, ApiBody, ApiConsumes, ApiOperation, ApiTags } from "@nestjs/swagger";
 import { Response } from "express";
 
+@ApiTags("Events")
+@ApiBearerAuth()
 @Controller("events")
 export class EventsController {
   constructor(private readonly events: EventsService) {}
@@ -32,6 +35,7 @@ export class EventsController {
 
   /** Danh sách sự kiện — ?page=&limit= (?limit=3 lấy 3 mới nhất). */
   @Get()
+  @ApiOperation({ summary: "Danh sách sự kiện — phân trang" })
   @UseGuards(StudentAuthGuard)
   async list(@Query() q: PaginationQueryDto) {
     try {
@@ -43,6 +47,8 @@ export class EventsController {
 
   /** Check-in sự kiện. */
   @Post(":eventCode/check-in")
+  @ApiOperation({ summary: "Check-in sự kiện" })
+  @ApiBody({ schema: { type: "object", properties: { location: { type: "string", example: "PTIT HCM" } } } })
   @UseGuards(StudentAuthGuard)
   async checkIn(
     @CurrentUser("studentCode") code: string,
@@ -61,6 +67,19 @@ export class EventsController {
 
   /** Đăng sự kiện (multipart: file `thumb` + title/content). */
   @Post()
+  @ApiOperation({ summary: "Đăng sự kiện (multipart: thumb + title/content) (chief)" })
+  @ApiConsumes("multipart/form-data")
+  @ApiBody({
+    schema: {
+      type: "object",
+      required: ["title", "content", "thumb"],
+      properties: {
+        title: { type: "string" },
+        content: { type: "string" },
+        thumb: { type: "string", format: "binary" },
+      },
+    },
+  })
   @UseGuards(ChiefAuthGuard)
   @UseInterceptors(FileInterceptor("thumb", { limits: { fileSize: 10 * 1024 * 1024 } }))
   async create(
@@ -78,6 +97,7 @@ export class EventsController {
   }
 
   @Delete(":eventCode")
+  @ApiOperation({ summary: "Xoá sự kiện (chief)" })
   @UseGuards(ChiefAuthGuard)
   async remove(
     @Param("eventCode") eventCode: string,
@@ -94,6 +114,7 @@ export class EventsController {
 
   /** QR check-in PNG (stream trực tiếp — không ghi đĩa như legacy). */
   @Get(":eventCode/qr")
+  @ApiOperation({ summary: "QR check-in PNG — stream trực tiếp (chief)" })
   @UseGuards(ChiefAuthGuard)
   async qr(@Param("eventCode") eventCode: string, @Res() res: Response) {
     try {
@@ -105,6 +126,7 @@ export class EventsController {
   }
 
   @Get(":eventCode/attendance")
+  @ApiOperation({ summary: "Danh sách điểm danh sự kiện (chief)" })
   @UseGuards(ChiefAuthGuard)
   async attendance(@Param("eventCode") eventCode: string) {
     try {

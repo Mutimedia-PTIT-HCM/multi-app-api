@@ -8,8 +8,11 @@ import {
   rethrowError,
 } from "@app-common";
 import { Body, Controller, HttpStatus, Put, UseGuards } from "@nestjs/common";
+import { ApiBearerAuth, ApiOperation, ApiTags } from "@nestjs/swagger";
 import { UpdateRoleDto } from "./dto";
 
+@ApiTags("Classes")
+@ApiBearerAuth()
 @Controller("classes")
 @UseGuards(ChiefAuthGuard)
 export class ClassesController {
@@ -17,6 +20,7 @@ export class ClassesController {
 
   /** Đổi role của 1 SV: role 7 set tuỳ ý (<8); role 3 set trừ 7 (giữ rule legacy). */
   @Put("role")
+  @ApiOperation({ summary: "Đổi role của 1 SV (role 7 full quyền, role 3 trừ 7)" })
   async updateRole(@CurrentUser() user: { studentCode: string; role: number }, @Body() dto: UpdateRoleDto) {
     try {
       if (user.role === 7) {
@@ -37,6 +41,7 @@ export class ClassesController {
 
   /** Crawl lại malop toàn khoá từ UIS — job nền (BullMQ), trả ngay jobId. */
   @Put("sync")
+  @ApiOperation({ summary: "Crawl lại malop toàn khoá từ UIS — job nền, trả jobId" })
   async syncClass(@CurrentUser() user: { studentCode: string; role: number }) {
     try {
       if (user.role === 6 || user.role === 0) {
