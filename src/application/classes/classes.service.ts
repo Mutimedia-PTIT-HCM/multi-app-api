@@ -1,9 +1,8 @@
+import { CLASS_SYNC_QUEUE } from "@app-common";
 import { PrismaService } from "@app-infra/prisma";
 import { InjectQueue } from "@nestjs/bullmq";
 import { Injectable, NotFoundException } from "@nestjs/common";
 import { Queue } from "bullmq";
-
-import { CLASS_SYNC_QUEUE } from "./class-sync.queue";
 @Injectable()
 export class ClassesService {
   constructor(

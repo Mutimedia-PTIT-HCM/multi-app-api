@@ -1,9 +1,8 @@
+import { PRIVILEGED_ROLES } from "@app-common";
 import { PrismaService } from "@app-infra/prisma";
 import { StorageService } from "@app-infra/storage";
 import { UploadedFilePayload } from "@app-type";
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from "@nestjs/common";
-
-const PRIVILEGED_ROLES = [3, 4]; // được reset điểm cả lớp
 
 @Injectable()
 export class TrainingPointsService {

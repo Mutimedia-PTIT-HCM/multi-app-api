@@ -1,3 +1,4 @@
+import { NO_CHIEF_ROLES, STUDENT_ROLE } from "@app-common";
 import { PrismaService } from "@app-infra/prisma";
 import { StorageService } from "@app-infra/storage";
 import { UisService, UisSessionService } from "@app-infra/uis";
@@ -5,9 +6,6 @@ import { TokenScope } from "@app-type";
 import { BadRequestException, Injectable, UnauthorizedException } from "@nestjs/common";
 import { JwtService } from "@nestjs/jwt";
 import { Student } from "@prisma/client";
-
-const STUDENT_ROLE = 6;
-const NO_CHIEF_ROLES = [0, 6];
 
 @Injectable()
 export class AuthService {

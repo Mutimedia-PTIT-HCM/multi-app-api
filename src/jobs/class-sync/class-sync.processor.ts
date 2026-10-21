@@ -1,4 +1,4 @@
-import { CLASS_SYNC_QUEUE } from "@app-application/classes";
+import { CLASS_SYNC_QUEUE } from "@app-common";
 import { PrismaService } from "@app-infra/prisma";
 import { UisService, UisSessionService } from "@app-infra/uis";
 import { Processor, WorkerHost } from "@nestjs/bullmq";

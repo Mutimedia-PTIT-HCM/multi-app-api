@@ -1,4 +1,5 @@
 import { SystemService } from "@app-application/system";
+import { POINT_CRAWL_QUEUE } from "@app-common";
 import { PrismaService } from "@app-infra/prisma";
 import { PushService } from "@app-infra/push";
 import { UisService, UisSessionService, UisUnreachableError } from "@app-infra/uis";
@@ -6,8 +7,6 @@ import { UisSession } from "@app-type";
 import { InjectQueue, Processor, WorkerHost } from "@nestjs/bullmq";
 import { Logger, OnModuleInit } from "@nestjs/common";
 import { Job, Queue } from "bullmq";
-
-import { POINT_CRAWL_QUEUE } from "./point-crawl.queue";
 /**
  * Thay thế legacy `runCheckNewPoint` (while(true) mỗi giờ):
  * - Job cha `crawl-all` lặp lại mỗi giờ → fan-out mỗi SV thành 1 job `crawl-one`.

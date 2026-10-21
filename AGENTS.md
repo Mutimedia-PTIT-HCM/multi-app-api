@@ -29,6 +29,7 @@ legacy/                   # code Express cũ + multidb.sql — READ ONLY
 - Layer rule: presentation (controller/gateway/dto) chỉ gọi application service; application chỉ gọi infrastructure + app-type; infrastructure không được import từ presentation/application; KHÔNG import ngược lên (`infrastructure` → `application` là cấm).
 - Mỗi file chỉ chứa 1 đơn vị: 1 class HOẶC 1 function HOẶC 1 type/const — không gộp nhiều export trong 1 file; export ra ngoài qua `index.ts` (barrel). DTO inline trong controller phải tách ra `dto/`; hằng số queue tách `<name>.queue.ts`; custom error tách `<name>.error.ts`.
 - File chung tài nguyên/cùng domain được group vào thư mục con (vd `app-type/uis/*`, `app-type/schedule/*`, `jobs/point-crawl/*`); thư mục con có `index.ts` riêng, index cha chỉ re-export subdir (`export * from "./uis"`).
+- Constant dùng chung toàn app đặt trong `common/` theo domain: `common/queues/` (tên BullMQ queue), `common/roles/` (role code) — KHÔNG để const cross-app rải trong service/processor. Constant chỉ dùng nội bộ 1 file giữ nguyên trong file đó.
 - Thêm export mới → export qua `index.ts` của thư mục.
 - Import cùng thư mục (`./foo`, `./dto/foo`) giữ nguyên relative.
 - tsconfig `paths: {"@app-type": ["./src/app-type"], "@app-*": ["./src/*"]}`; sau `tsc`, `scripts/fix-dist-paths.js` rewrite `require("@app-...")` trong dist (đã gắn trong `npm run build`) — prefix `@app-` không trùng npm scoped packages.
