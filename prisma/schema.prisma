@@ -1,0 +1,287 @@
+// Multi-app v2 — schema thiết kế lại từ legacy `multidb`.
+// Convention: table snake_case plural, column camelCase, DateTime thật, FK + index.
+// Mapping tên cũ -> mới ghi ở comment từng model.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// ===================== USER / ORG =====================
+
+// legacy: sinhvien
+model Student {
+  studentCode       String   @id @db.VarChar(12) // mssv
+  uisRefreshToken   String?  @db.Text // AES-256-GCM encrypted — rotate mỗi lần refresh
+  uisAccessToken    String?  @db.Text // Bearer token UIS (~8h TTL)
+  uisTokenExpiresAt DateTime? // thời điểm access token hết hạn
+  classCode         String   @db.VarChar(50) // malop — cũng là FCM topic
+  fcmToken          String?  @db.Text
+  fullName          String?  @db.VarChar(300) // hoten
+  phone             String?  @db.VarChar(20) // sdt
+  personalEmail     String?  @db.VarChar(255) // pers_email
+  facebook          String?  @db.VarChar(500) // fb
+  gender            Int      @default(0) // 0 Nam, 1 Nữ
+  birthDate         String?  @db.VarChar(10) // ngaysinh — giữ 'dd/mm/yyyy' cho khớp UIS/contract
+  avatarKey         String?  @db.VarChar(500) // avt — storage key (R2)
+  role              Int      @default(6) // 6 = SV thường; 3,4,7 = ban cán sự/BCH
+  isCollaborator    Boolean  @default(false) // ctv
+  hidePersonalEmail Boolean  @default(false)
+  hideFacebook      Boolean  @default(false)
+  hidePhone         Boolean  @default(false)
+  otp               String?  @db.VarChar(10)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  certificates          Certificate[]
+  eventCheckIns         EventCheckIn[]
+  postedEvents          Event[]
+  sentMessages          Message[]          @relation("MessageSender")
+  receivedMessages      Message[]          @relation("MessageReceiver")
+  notifications         NotificationRecipient[]
+  postedNotifications   Notification[]
+  orders                Order[]
+  pointSnapshots        PointSnapshot[]
+  products              Product[]
+  trainingPoints        TrainingPoint[]
+
+  @@index([classCode])
+  @@map("students")
+}
+
+// legacy: canbo
+model Teacher {
+  teacherCode  String  @id @db.VarChar(10) // magv
+  fullName     String? @db.VarChar(100) // hotengv
+  birthDate    String? @db.VarChar(10) // ngaysinh
+  zalo         String? @db.VarChar(20) // zl
+  phone        String? @db.VarChar(20) // sdt
+  email        String? @db.VarChar(100)
+  academicRank String? @db.VarChar(30) // hocham
+  degree       String? @db.VarChar(30) // hocvi
+
+  @@map("teachers")
+}
+
+// legacy: mentor
+model Mentor {
+  id          Int    @id @default(autoincrement())
+  teacherCode String @db.VarChar(10)
+  classCode   String @db.VarChar(50)
+
+  @@unique([teacherCode, classCode])
+  @@map("mentors")
+}
+
+// legacy: position
+model Position {
+  id   Int    @id
+  name String @db.VarChar(100)
+
+  @@map("positions")
+}
+
+// legacy: config
+model SystemConfig {
+  id           Int    @id @default(autoincrement())
+  semesterCode String @db.VarChar(5) // nhhk — dạng YYYYK (vd 20241)
+
+  @@map("system_configs")
+}
+
+// ===================== ĐIỂM RÈN LUYỆN =====================
+
+// legacy: form_point_ext
+model TrainingPointForm {
+  id       Int    @id @default(autoincrement())
+  orderNo  Float? // stt
+  content  String @db.Text
+  maxPoint Int? // pointRule — điểm tối đa của tiêu chí
+  type     String @db.VarChar(50)
+  parentId Int?
+
+  points TrainingPoint[]
+
+  @@map("training_point_forms")
+}
+
+// legacy: point_ext
+model TrainingPoint {
+  id          Int    @id @default(autoincrement())
+  formId      Int
+  studentCode String @db.VarChar(12)
+  selfPoint   Int    @default(0) // pointSelf — SV tự chấm
+  finalPoint  Int    @default(0) // pointFinal — BCS duyệt
+
+  form    TrainingPointForm @relation(fields: [formId], references: [id], onDelete: Cascade)
+  student Student           @relation(fields: [studentCode], references: [studentCode], onDelete: Cascade)
+
+  @@unique([formId, studentCode])
+  @@index([studentCode])
+  @@map("training_points")
+}
+
+// legacy: status_point_ext
+model TrainingPointStatus {
+  classCode String  @id @db.VarChar(50)
+  isOpen    Boolean @default(false)
+
+  @@map("training_point_statuses")
+}
+
+// legacy: cert
+model Certificate {
+  id          Int    @id @default(autoincrement())
+  studentCode String @db.VarChar(12)
+  title       String @db.Text
+  imageKeys   String @db.Text // space-separated storage keys
+  createdAt   DateTime @default(now())
+
+  student Student @relation(fields: [studentCode], references: [studentCode], onDelete: Cascade)
+
+  @@index([studentCode])
+  @@map("certificates")
+}
+
+// ===================== SỰ KIỆN =====================
+
+// legacy: chitietsukien
+model Event {
+  eventCode    String   @id @db.VarChar(30) // masukien
+  title        String   @db.VarChar(500) // ten
+  content      String   @db.Text // noidung
+  eventTime    String?  @db.VarChar(256) // thoigian — text tự do
+  isDone       Boolean  @default(false) // done
+  thumbnailKey String?  @db.VarChar(500) // thumb — storage key
+  posterCode   String   @db.VarChar(12) // poster
+  createdAt    DateTime @default(now())
+
+  poster   Student        @relation(fields: [posterCode], references: [studentCode])
+  checkIns EventCheckIn[]
+
+  @@map("events")
+}
+
+// legacy: sukien
+model EventCheckIn {
+  id          Int      @id @default(autoincrement())
+  eventCode   String   @db.VarChar(30) // mask
+  studentCode String   @db.VarChar(12)
+  checkInAt   DateTime @default(now()) // thoigiancheckin — giờ là DateTime thật
+  location    String?  @db.VarChar(255)
+
+  event   Event   @relation(fields: [eventCode], references: [eventCode], onDelete: Cascade)
+  student Student @relation(fields: [studentCode], references: [studentCode], onDelete: Cascade)
+
+  @@unique([eventCode, studentCode])
+  @@index([eventCode])
+  @@map("event_check_ins")
+}
+
+// ===================== THÔNG BÁO =====================
+
+// legacy: ctthongbao
+model Notification {
+  notificationCode String   @id @db.VarChar(30) // matb
+  title            String   @db.Text // tieude
+  content          String   @db.Text // noidung
+  posterCode       String   @db.VarChar(12) // poster
+  sentAt           DateTime @default(now()) // sendat — DateTime thật
+  type             String   @db.VarChar(30) // 'normal' | 'schedule' | ...
+  fileKeys         String?  @db.Text // list_file_name — space-separated keys
+
+  poster     Student                  @relation(fields: [posterCode], references: [studentCode])
+  recipients NotificationRecipient[]
+
+  @@map("notifications")
+}
+
+// legacy: thongbao
+model NotificationRecipient {
+  id               Int      @id @default(autoincrement())
+  notificationCode String   @db.VarChar(30) // matb
+  studentCode      String   @db.VarChar(12)
+  seen             Boolean  @default(false)
+  createdAt        DateTime @default(now())
+
+  notification Notification @relation(fields: [notificationCode], references: [notificationCode], onDelete: Cascade)
+  student      Student      @relation(fields: [studentCode], references: [studentCode], onDelete: Cascade)
+
+  @@unique([notificationCode, studentCode])
+  @@index([studentCode])
+  @@map("notification_recipients")
+}
+
+// ===================== CHỢ ẤN PHẨM =====================
+
+// legacy: anpham
+model Product {
+  productCode String   @id @db.VarChar(30) // maanpham
+  sellerCode  String   @db.VarChar(12) // mssv người bán
+  name        String   @db.VarChar(256) // tenanpham
+  price       String?  @db.VarChar(50) // gia — text tự do ('50k', '100.000đ')
+  stock       Int // soluongton
+  description String?  @db.Text // mota
+  imageKeys   String   @db.Text // hinhanh — space-separated keys
+  createdAt   DateTime @default(now())
+
+  seller Student @relation(fields: [sellerCode], references: [studentCode])
+  orders Order[]
+
+  @@map("products")
+}
+
+// legacy: donhang
+model Order {
+  orderCode   String   @id @db.VarChar(30) // madonhang
+  buyerCode   String   @db.VarChar(12)
+  productCode String   @db.VarChar(30)
+  quantity    Int // soluong
+  status      Int      @default(-1) // -1 mới đặt, 0 đã xác nhận, 1 hoàn thành
+  note        String   @db.Text
+  createdAt   DateTime @default(now()) // time
+
+  buyer   Student @relation(fields: [buyerCode], references: [studentCode])
+  product Product @relation(fields: [productCode], references: [productCode])
+
+  @@index([buyerCode])
+  @@index([productCode])
+  @@map("orders")
+}
+
+// ===================== TIN NHẮN =====================
+
+// legacy: message
+model Message {
+  messageCode  String   @id @db.VarChar(30)
+  senderCode   String   @db.VarChar(12) // sender
+  receiverCode String   @db.VarChar(12) // receiver
+  content      String?  @db.Text
+  sentAt       DateTime @default(now()) // time — DateTime thật
+  state        Int      @default(1)
+
+  sender   Student @relation("MessageSender", fields: [senderCode], references: [studentCode], onDelete: Cascade)
+  receiver Student @relation("MessageReceiver", fields: [receiverCode], references: [studentCode], onDelete: Cascade)
+
+  @@index([senderCode, receiverCode])
+  @@map("messages")
+}
+
+// ===================== CRAWL CACHE =====================
+
+// legacy: pointtmp — cache GPA để job so sánh thay đổi
+model PointSnapshot {
+  id           Int    @id @default(autoincrement())
+  studentCode  String @db.VarChar(12)
+  semesterCode String @db.VarChar(5) // nhhk
+  gpa          Float?
+
+  student Student @relation(fields: [studentCode], references: [studentCode], onDelete: Cascade)
+
+  @@unique([studentCode, semesterCode])
+  @@map("point_snapshots")
+}

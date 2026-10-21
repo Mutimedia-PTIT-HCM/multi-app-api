@@ -1,0 +1,187 @@
+import { PrismaService } from "@app-infra/prisma";
+import { StorageService } from "@app-infra/storage";
+import { UploadedFilePayload } from "@app-type";
+import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from "@nestjs/common";
+
+const PRIVILEGED_ROLES = [3, 4]; // được reset điểm cả lớp
+
+@Injectable()
+export class TrainingPointsService {
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly storage: StorageService,
+  ) {}
+
+  // ===================== STUDENT =====================
+
+  /** Form tiêu chí + điểm của 1 SV. */
+  async getFormWithPoints(studentCode: string) {
+    return this.prisma.trainingPointForm.findMany({
+      orderBy: { id: "asc" },
+      include: {
+        points: {
+          where: { studentCode },
+          select: { id: true, selfPoint: true, finalPoint: true },
+        },
+      },
+    });
+  }
+
+  async selfAssess(studentCode: string, formId: number, point: number) {
+    await this.assertClassOpen(studentCode);
+    const form = await this.prisma.trainingPointForm.findUnique({ where: { id: formId } });
+    if (!form) throw new NotFoundException("Không tìm thấy tiêu chí");
+    if (form.maxPoint != null && point > form.maxPoint) {
+      throw new BadRequestException("Điểm vượt quá mức quy định");
+    }
+    await this.prisma.trainingPoint.upsert({
+      where: { formId_studentCode: { formId, studentCode } },
+      create: { formId, studentCode, selfPoint: point, finalPoint: 0 },
+      update: { selfPoint: point },
+    });
+  }
+
+  async uploadCertificate(studentCode: string, title: string, files: UploadedFilePayload[]) {
+    await this.assertClassOpen(studentCode);
+    const keys: string[] = [];
+    for (const f of files) {
+      const key = this.storage.generateKey("cert", f.originalname);
+      await this.storage.upload(key, f.buffer, f.mimetype);
+      keys.push(key);
+    }
+    await this.prisma.certificate.create({
+      data: { studentCode, title, imageKeys: keys.join(" ") },
+    });
+  }
+
+  /** Minh chứng: sự kiện đã check-in + cert tự upload. */
+  async getCertificates(studentCode: string) {
+    const [events, individual] = await Promise.all([
+      this.prisma.eventCheckIn.findMany({
+        where: { studentCode },
+        include: { event: true },
+      }),
+      this.prisma.certificate.findMany({ where: { studentCode } }),
+    ]);
+    return {
+      major: events.map((c) => c.event),
+      individual: individual.map((c) => ({ ...c, imageUrls: this.storage.urls(c.imageKeys) })),
+    };
+  }
+
+  // ===================== CHIEF =====================
+
+  async getStatus(studentCode: string): Promise<boolean> {
+    const classCode = await this.getMyClassCode(studentCode);
+    const status = await this.prisma.trainingPointStatus.findUnique({ where: { classCode } });
+    if (status) return status.isOpen;
+    await this.prisma.trainingPointStatus.create({ data: { classCode, isOpen: false } });
+    return false;
+  }
+
+  async setStatus(studentCode: string, isOpen: boolean) {
+    const classCode = await this.getMyClassCode(studentCode);
+    await this.prisma.trainingPointStatus.upsert({
+      where: { classCode },
+      create: { classCode, isOpen },
+      update: { isOpen },
+    });
+  }
+
+  /** Điểm rèn luyện cả lớp — 1 query, không N+1. */
+  async getClassPoints(chiefCode: string) {
+    const classCode = await this.getMyClassCode(chiefCode);
+    const members = await this.prisma.student.findMany({
+      where: { classCode },
+      select: { studentCode: true, classCode: true, fullName: true, birthDate: true, avatarKey: true },
+      orderBy: { studentCode: "asc" },
+    });
+    const forms = await this.prisma.trainingPointForm.findMany({
+      orderBy: { id: "asc" },
+      include: {
+        points: {
+          where: { student: { classCode } },
+          select: { id: true, studentCode: true, selfPoint: true, finalPoint: true },
+        },
+      },
+    });
+    return members.map((m) => ({
+      ...m,
+      avatarUrl: this.storage.url(m.avatarKey),
+      points: forms.map((f) => ({
+        ...f,
+        points: f.points.filter((p) => p.studentCode === m.studentCode),
+      })),
+    }));
+  }
+
+  /** Chief chấm pointFinal cho SV (phải cùng lớp). */
+  async reviewPoint(chiefCode: string, studentCode: string, formId: number, point: number) {
+    await this.assertSameClass(chiefCode, studentCode);
+    const form = await this.prisma.trainingPointForm.findUnique({ where: { id: formId } });
+    if (!form) throw new NotFoundException("Không tìm thấy tiêu chí");
+    if (form.maxPoint != null && point > form.maxPoint) {
+      throw new BadRequestException("Điểm vượt quá mức quy định");
+    }
+    await this.prisma.trainingPoint.upsert({
+      where: { formId_studentCode: { formId, studentCode } },
+      create: { formId, studentCode, selfPoint: 0, finalPoint: point },
+      update: { finalPoint: point },
+    });
+  }
+
+  async deletePoint(chiefCode: string, pointId: number) {
+    const point = await this.prisma.trainingPoint.findUnique({ where: { id: pointId } });
+    if (!point) throw new NotFoundException("Không tìm thấy điểm");
+    await this.assertSameClass(chiefCode, point.studentCode);
+    await this.prisma.trainingPoint.delete({ where: { id: pointId } });
+  }
+
+  /** Reset điểm + cert cả lớp — chỉ role 3/4 (giữ nguyên legacy). */
+  async resetClass(chiefCode: string, chiefRole: number) {
+    if (!PRIVILEGED_ROLES.includes(chiefRole)) {
+      throw new ForbiddenException("Không có quyền thực hiện");
+    }
+    const classCode = await this.getMyClassCode(chiefCode);
+    const certs = await this.prisma.certificate.findMany({
+      where: { student: { classCode } },
+      select: { imageKeys: true },
+    });
+    const keys = certs.flatMap((c) => c.imageKeys.split(" ").filter(Boolean));
+    await this.prisma.$transaction([
+      this.prisma.certificate.deleteMany({ where: { student: { classCode } } }),
+      this.prisma.trainingPoint.deleteMany({ where: { student: { classCode } } }),
+    ]);
+    for (const key of keys) {
+      await this.storage.delete(key).catch(() => undefined);
+    }
+  }
+
+  // ===================== HELPERS =====================
+
+  private async getMyClassCode(studentCode: string): Promise<string> {
+    const me = await this.prisma.student.findUnique({
+      where: { studentCode },
+      select: { classCode: true },
+    });
+    if (!me) throw new NotFoundException("Không tìm thấy sinh viên");
+    return me.classCode;
+  }
+
+  private async assertClassOpen(studentCode: string) {
+    const classCode = await this.getMyClassCode(studentCode);
+    const status = await this.prisma.trainingPointStatus.findUnique({ where: { classCode } });
+    if (!status?.isOpen) throw new BadRequestException("Đã khoá chấm điểm");
+  }
+
+  private async assertSameClass(chiefCode: string, studentCode: string) {
+    const [chief, student] = await Promise.all([
+      this.prisma.student.findUnique({ where: { studentCode: chiefCode }, select: { classCode: true } }),
+      this.prisma.student.findUnique({ where: { studentCode }, select: { classCode: true } }),
+    ]);
+    if (!student) throw new NotFoundException("Không tìm thấy sinh viên");
+    if (chief?.classCode !== student.classCode) {
+      throw new ForbiddenException("Sinh viên không thuộc lớp của bạn");
+    }
+  }
+}

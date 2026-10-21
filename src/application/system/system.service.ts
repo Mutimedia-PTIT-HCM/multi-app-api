@@ -1,0 +1,30 @@
+import { PrismaService } from "@app-infra/prisma";
+import { Injectable } from "@nestjs/common";
+
+@Injectable()
+export class SystemService {
+  constructor(private readonly prisma: PrismaService) {}
+
+  /** Học kỳ hiện tại (nhhk), vd '20241'. */
+  async getCurrentSemester(): Promise<string> {
+    const config = await this.prisma.systemConfig.findFirst({ orderBy: { id: "asc" } });
+    if (!config) throw new Error("Chưa cấu hình học kỳ (system_configs rỗng)");
+    return config.semesterCode;
+  }
+
+  async setCurrentSemester(semesterCode: string): Promise<void> {
+    const config = await this.prisma.systemConfig.findFirst();
+    if (config) {
+      await this.prisma.systemConfig.update({ where: { id: config.id }, data: { semesterCode } });
+    } else {
+      await this.prisma.systemConfig.create({ data: { semesterCode } });
+    }
+  }
+
+  /** Học kỳ kế tiếp của 1 mã học kỳ YYYYK (K∈1,2,3). */
+  nextSemester(semesterCode: string): string {
+    const year = parseInt(semesterCode.slice(0, 4), 10);
+    const sem = parseInt(semesterCode.slice(4), 10);
+    return sem === 3 ? `${year + 1}1` : `${year}${sem + 1}`;
+  }
+}
