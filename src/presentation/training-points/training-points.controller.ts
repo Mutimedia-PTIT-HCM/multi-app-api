@@ -14,7 +14,7 @@ import {
   UseInterceptors,
 } from "@nestjs/common";
 import { FilesInterceptor } from "@nestjs/platform-express";
-import { ReviewPointDto, SelfAssessDto, ToggleStatusDto } from "./dto/self-assess.dto";
+import { ReviewPointDto, SelfAssessDto, ToggleStatusDto } from "./dto";
 
 /** Điểm rèn luyện — tự chấm (student) + duyệt (chief). */
 @Controller("training-points")

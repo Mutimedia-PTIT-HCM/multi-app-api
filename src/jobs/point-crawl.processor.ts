@@ -7,8 +7,7 @@ import { InjectQueue, Processor, WorkerHost } from "@nestjs/bullmq";
 import { Logger, OnModuleInit } from "@nestjs/common";
 import { Job, Queue } from "bullmq";
 
-export const POINT_CRAWL_QUEUE = "point-crawl";
-
+import { POINT_CRAWL_QUEUE } from "./point-crawl.queue";
 /**
  * Thay thế legacy `runCheckNewPoint` (while(true) mỗi giờ):
  * - Job cha `crawl-all` lặp lại mỗi giờ → fan-out mỗi SV thành 1 job `crawl-one`.

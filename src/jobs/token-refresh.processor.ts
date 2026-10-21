@@ -4,8 +4,7 @@ import { InjectQueue, Processor, WorkerHost } from "@nestjs/bullmq";
 import { Logger, OnModuleInit } from "@nestjs/common";
 import { Job, Queue } from "bullmq";
 
-export const TOKEN_REFRESH_QUEUE = "token-refresh";
-
+import { TOKEN_REFRESH_QUEUE } from "./token-refresh.queue";
 /**
  * Gia hạn phiên UIS định kỳ mỗi 5h:
  * - Job cha `renew-all` lặp lại → fan-out mỗi SV có credential thành 1 job `renew-one`.

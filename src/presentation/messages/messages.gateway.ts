@@ -9,7 +9,8 @@ import {
   WebSocketServer,
 } from "@nestjs/websockets";
 import { Server, Socket } from "socket.io";
-import { WsAuthGuard, WsCurrentUser } from "./ws-auth.guard";
+import { WsAuthGuard } from "./ws-auth.guard";
+import { WsCurrentUser } from "./ws-current-user.decorator";
 
 interface SendMessagePayload {
   receiver: string;

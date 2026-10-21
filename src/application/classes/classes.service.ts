@@ -3,8 +3,7 @@ import { InjectQueue } from "@nestjs/bullmq";
 import { Injectable, NotFoundException } from "@nestjs/common";
 import { Queue } from "bullmq";
 
-export const CLASS_SYNC_QUEUE = "class-sync";
-
+import { CLASS_SYNC_QUEUE } from "./class-sync.queue";
 @Injectable()
 export class ClassesService {
   constructor(

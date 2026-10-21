@@ -4,9 +4,7 @@ import { UisSession, UisTokens } from "@app-type";
 import { Injectable, UnauthorizedException } from "@nestjs/common";
 import { UisService } from "./uis.service";
 
-/** UIS timeout/lỗi mạng — caller nên retry, KHÔNG coi như hết phiên. */
-export class UisUnreachableError extends Error {}
-
+import { UisUnreachableError } from "./uis-unreachable.error";
 /**
  * Cấp UIS session (access token) cho 1 sinh viên:
  *  1. Access token còn hạn trong DB → dùng lại.

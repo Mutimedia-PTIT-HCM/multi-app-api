@@ -4,9 +4,11 @@ import { BullModule } from "@nestjs/bullmq";
 import { Module } from "@nestjs/common";
 import { ScheduleModule } from "@nestjs/schedule";
 import { ClassSyncProcessor } from "./class-sync.processor";
-import { POINT_CRAWL_QUEUE, PointCrawlProcessor } from "./point-crawl.processor";
+import { PointCrawlProcessor } from "./point-crawl.processor";
+import { POINT_CRAWL_QUEUE } from "./point-crawl.queue";
 import { SemesterSyncService } from "./semester-sync.service";
-import { TOKEN_REFRESH_QUEUE, TokenRefreshProcessor } from "./token-refresh.processor";
+import { TokenRefreshProcessor } from "./token-refresh.processor";
+import { TOKEN_REFRESH_QUEUE } from "./token-refresh.queue";
 
 @Module({
   imports: [

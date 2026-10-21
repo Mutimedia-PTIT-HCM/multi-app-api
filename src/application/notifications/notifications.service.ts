@@ -1,14 +1,8 @@
 import { PrismaService } from "@app-infra/prisma";
 import { PushService } from "@app-infra/push";
 import { StorageService } from "@app-infra/storage";
-import { UploadedFilePayload } from "@app-type";
+import { SchedulePayload, UploadedFilePayload } from "@app-type";
 import { Injectable, NotFoundException } from "@nestjs/common";
-
-export interface SchedulePayload {
-  learnTimeClock?: string; // 'HH:mm'
-  learnTimeDate?: string; // 'dd/mm/yyyy'
-  room?: string;
-}
 
 @Injectable()
 export class NotificationsService {

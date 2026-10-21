@@ -2,14 +2,7 @@ import { AuthUser, JwtClaims, TokenScope } from "@app-type";
 import { CanActivate, ExecutionContext, Injectable, UnauthorizedException } from "@nestjs/common";
 import { JwtService } from "@nestjs/jwt";
 import { Request } from "express";
-
-function extractToken(req: Request): string {
-  const header = req.headers.authorization;
-  if (!header) throw new UnauthorizedException("Thiếu thông tin xác thực");
-  const [type, token] = header.split(" ");
-  if (type !== "Bearer" || !token) throw new UnauthorizedException("Thiếu thông tin xác thực");
-  return token;
-}
+import { extractToken } from "./extract-token";
 
 export function createAuthGuard(requiredScope: TokenScope) {
   @Injectable()
@@ -34,9 +27,3 @@ export function createAuthGuard(requiredScope: TokenScope) {
   }
   return AuthGuard;
 }
-
-@Injectable()
-export class StudentAuthGuard extends createAuthGuard("student") {}
-
-@Injectable()
-export class ChiefAuthGuard extends createAuthGuard("chief") {}

@@ -1,8 +1,4 @@
-import { Transform } from "class-transformer";
-import { IsBoolean, IsInt, IsNotEmpty, IsString, Min } from "class-validator";
-
-const toBool = ({ value }: { value: unknown }) =>
-  value === true || value === "true" || value === "1" || value === 1;
+import { IsInt, Min } from "class-validator";
 
 export class SelfAssessDto {
   @IsInt()
@@ -11,16 +7,4 @@ export class SelfAssessDto {
   @IsInt()
   @Min(0)
   point!: number;
-}
-
-export class ReviewPointDto extends SelfAssessDto {
-  @IsString()
-  @IsNotEmpty()
-  studentCode!: string;
-}
-
-export class ToggleStatusDto {
-  @Transform(toBool)
-  @IsBoolean()
-  isOpen!: boolean;
 }

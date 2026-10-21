@@ -1,5 +1,5 @@
 import { JwtClaims } from "@app-type";
-import { CanActivate, createParamDecorator, ExecutionContext, Injectable } from "@nestjs/common";
+import { CanActivate, ExecutionContext, Injectable } from "@nestjs/common";
 import { JwtService } from "@nestjs/jwt";
 import { WsException } from "@nestjs/websockets";
 import { Socket } from "socket.io";
@@ -26,10 +26,3 @@ export class WsAuthGuard implements CanActivate {
     }
   }
 }
-
-export const WsCurrentUser = createParamDecorator(
-  (_data: unknown, ctx: ExecutionContext): { studentCode: string } => {
-    const client = ctx.switchToWs().getClient<Socket & { user?: JwtClaims }>();
-    return { studentCode: client.user?.sub ?? "" };
-  },
-);
