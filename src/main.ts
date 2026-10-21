@@ -4,7 +4,7 @@ import { HttpStatus, ValidationPipe } from "@nestjs/common";
 import { NestFactory } from "@nestjs/core";
 import { NestExpressApplication } from "@nestjs/platform-express";
 import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
-import { json, static as serveStatic, urlencoded } from "express";
+import { json, raw, static as serveStatic, urlencoded } from "express";
 import { existsSync, mkdirSync } from "fs";
 import { join } from "path";
 import { AppModule } from "./app.module";
@@ -13,6 +13,8 @@ async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
 
   app.setGlobalPrefix("api/v1", { exclude: ["/"] });
+  // Raw binary cho PUT /uploads/local/:token (fallback upload khi không có R2)
+  app.use("/api/v1/uploads/local", raw({ type: "*/*", limit: "20mb" }));
   app.use(json({ limit: "10mb" }));
   app.use(urlencoded({ extended: true }));
   app.enableCors({ origin: process.env.CORS_ORIGIN?.split(",") ?? true });

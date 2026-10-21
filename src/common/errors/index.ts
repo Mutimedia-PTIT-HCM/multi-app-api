@@ -12,3 +12,4 @@ export * from "./system.errors";
 export * from "./training-point.errors";
 export * from "./uis.errors";
 export * from "./uis-unreachable.error";
+export * from "./upload.errors";

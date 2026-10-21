@@ -68,7 +68,7 @@ legacy/                   # code Express cũ + multidb.sql — READ ONLY
 - DB: chỉ qua `PrismaService` — KHÔNG raw SQL nối chuỗi. Cột DB là camelCase, map 1-1 với field Prisma.
 - KHÔNG lưu password UIS — chỉ lưu OAuth tokens mã hoá qua `CredentialCipherService` (AES-GCM). KHÔNG log password/token.
 - UIS OAuth: login grant=password → lưu `uisAccessToken`(8h)+`uisRefreshToken`(rotate) đã mã hoá. Mọi chỗ cần gọi UIS API phải đi qua `UisSessionService.getSession(mssv)` — tự reuse/refresh; refresh token chết → user phải login lại app. KHÔNG gọi `uis.login` trực tiếp ngoài auth flow. Refresh BẮT BUỘC kèm `username`; refresh xong access token cũ chết (single session). Cron `token-refresh` chạy mỗi 5h gia hạn session.
-- File upload: qua `StorageService` (tự fallback local `./uploads` khi chưa có `R2_*`); validate mime/size; key giữ prefix legacy (`avt/`, `products/`, `cert/`, `notification/`, `event/thumb/`, `event/qrcode/`).
+- File upload: qua `StorageService` (tự fallback local `./uploads` khi chưa có `S3_*`); validate mime/size; key giữ prefix legacy (`avt/`, `products/`, `cert/`, `notification/`, `event/thumb/`, `event/qrcode/`).
 - Socket: gateway yêu cầu JWT trong `handshake.auth.token`; giữ event name legacy `LOGIN`, `SEND_MESSAGE_TO_RECEIVER`, `NEW_MESSAGE`.
 - FCM: gửi theo topic (`PushService.sendToTopics`), topic = mssv / malop — client tự subscribe.
 - KHÔNG commit secrets (`.env`, `service-account.json`, `*.p8`). `.env.example` là mẫu duy nhất được commit.
@@ -93,3 +93,11 @@ npm run typecheck && npm run lint  # verify trước khi commit
 ```
 
 Docs API: `http://localhost:3000/api/docs` (Swagger).
+
+## Upload flow (2 bước, presigned)
+
+- Client KHÔNG gửi file trực tiếp vào API nghiệp vụ nữa: `POST /api/v1/uploads/presign` (body `{purpose, fileName, contentType}`) → nhận `{key, uploadUrl, method:"PUT", publicUrl}` → client PUT binary lên `uploadUrl` → dùng `key`/`publicUrl` trong API nghiệp vụ.
+- Storage theo env `S3_*`: MinIO trong docker-compose (dev, bucket `multi-uploads`, anonymous download) · R2/AWS chỉ cần đổi `S3_ENDPOINT`/`S3_REGION` · trống → local `./uploads`.
+- S3 mode: `uploadUrl` là presigned PUT URL SigV4 (15 phút). `S3_ENDPOINT` cho server nội bộ, `S3_PRESIGN_ENDPOINT`/`S3_PUBLIC_URL` trỏ host public — host nằm trong chữ ký nên KHÔNG đổi host sau khi ký.
+- Local mode: `uploadUrl` là `PUT /api/v1/uploads/local/:token` — token JWT ngắn hạn scope `"upload"`, endpoint public.
+- `purpose` quyết định prefix key: avatar→`avt`, product→`products`, notification→`notification`, event→`event/thumb`, cert→`cert`, misc→`misc`.

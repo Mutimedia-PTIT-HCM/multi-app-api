@@ -16,6 +16,7 @@ import { StudentsModule } from "@app-presentation/students";
 import { SystemModule } from "@app-presentation/system";
 import { TeachersModule } from "@app-presentation/teachers";
 import { TrainingPointsModule } from "@app-presentation/training-points";
+import { UploadsModule } from "@app-presentation/uploads";
 import { BullModule } from "@nestjs/bullmq";
 import { Module } from "@nestjs/common";
 import { ConfigModule, ConfigService } from "@nestjs/config";
@@ -49,6 +50,7 @@ import { RootController } from "./root.controller";
     ProductsModule,
     TeachersModule,
     ClassesModule,
+    UploadsModule,
     SystemModule,
     JobsModule,
   ],

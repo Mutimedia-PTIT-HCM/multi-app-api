@@ -25,7 +25,7 @@ Codebase mới đã dựng tại root repo (Express cũ nằm trong `legacy/`):
 - ✅ NestJS 11 + TS7 + Prisma + MySQL `multidb_v2` (camelCase columns) + BullMQ/Redis + Socket.IO
 - ✅ Response envelope `{error,message,data}` giữ nguyên; global prefix `/api/v1`; Swagger tại `/api/docs`
 - ✅ Auth JWT 2 scope (`student`/`chief`) qua `StudentAuthGuard`/`ChiefAuthGuard`; password UIS mã hoá AES-GCM
-- ✅ Storage abstraction: R2 (S3) khi có `R2_*`, fallback local `./uploads` + serve `/uploads/*`
+- ✅ Storage abstraction: S3-compatible qua `S3_*` (MinIO dev / R2 / AWS), fallback local `./uploads` + serve `/uploads/*`
 - ✅ Jobs: BullMQ `point-crawl` (fan-out per student, retry+rate-limit), `class-sync`, cron `semester-sync` 0h hằng ngày
 - ✅ Đã import xong data từ `multidb` (script one-shot đã xoá sau khi chạy: 710 SV, 11.985 điểm RL, 4.606 snapshot điểm, 308 tin nhắn, 23 đơn hàng…)
 - ⏳ Chưa verify e2e với tài khoản UIS thật; chưa có test suite; chưa migrate file vật lý lên R2

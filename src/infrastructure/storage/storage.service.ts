@@ -1,4 +1,5 @@
 import { PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { Injectable, Logger } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { createHash } from "crypto";
@@ -6,36 +7,48 @@ import { mkdirSync, unlinkSync, writeFileSync } from "fs";
 import { extname, join } from "path";
 
 /**
- * Lưu file lên Cloudflare R2 (S3-compatible).
- * Nếu chưa cấu hình R2_* → fallback ghi local ./uploads (chạy thử dev).
+ * Lưu file lên S3-compatible storage (MinIO dev / Cloudflare R2 / AWS S3)
+ * qua biến S3_*. Để trống → fallback ghi local ./uploads.
+ *
+ * S3_ENDPOINT là endpoint server gọi trực tiếp; S3_PRESIGN_ENDPOINT là
+ * endpoint public client dùng cho presigned URL — host nằm trong chữ ký
+ * SigV4 nên không thể đổi host sau khi ký (vd MinIO trong docker:
+ * server gọi minio:9000 nhưng client presign phải là localhost:9000).
+ * Cloudflare R2: S3_ENDPOINT=https://<account>.r2.cloudflarestorage.com, S3_REGION=auto.
  */
 @Injectable()
 export class StorageService {
   private readonly logger = new Logger(StorageService.name);
   private readonly s3?: S3Client;
+  private readonly s3Presign?: S3Client;
   private readonly bucket?: string;
   private readonly publicUrl?: string;
   private readonly localDir: string;
   private readonly localBaseUrl: string;
 
   constructor(config: ConfigService) {
-    const accountId = config.get<string>("R2_ACCOUNT_ID");
-    const accessKeyId = config.get<string>("R2_ACCESS_KEY_ID");
-    const secretAccessKey = config.get<string>("R2_SECRET_ACCESS_KEY");
-    this.bucket = config.get<string>("R2_BUCKET");
-    this.publicUrl = config.get<string>("R2_PUBLIC_URL")?.replace(/\/$/, "");
     this.localDir = config.get<string>("LOCAL_UPLOAD_DIR") ?? join(process.cwd(), "uploads");
     this.localBaseUrl = (config.get<string>("BASE_URL") ?? "").replace(/\/$/, "");
 
-    if (accountId && accessKeyId && secretAccessKey && this.bucket) {
-      this.s3 = new S3Client({
-        region: "auto",
-        endpoint: `https://${accountId}.r2.cloudflarestorage.com`,
-        credentials: { accessKeyId, secretAccessKey },
-      });
-      this.logger.log("Storage: Cloudflare R2");
+    const endpoint = config.get<string>("S3_ENDPOINT");
+    const accessKeyId = config.get<string>("S3_ACCESS_KEY_ID");
+    const secretAccessKey = config.get<string>("S3_SECRET_ACCESS_KEY");
+    this.bucket = config.get<string>("S3_BUCKET");
+    this.publicUrl = config.get<string>("S3_PUBLIC_URL")?.replace(/\/$/, "");
+
+    if (endpoint && accessKeyId && secretAccessKey && this.bucket) {
+      const credentials = { accessKeyId, secretAccessKey };
+      const region = config.get<string>("S3_REGION") ?? "us-east-1";
+      // Path-style: endpoint/bucket/key — hoạt động cả MinIO lẫn R2
+      this.s3 = new S3Client({ region, endpoint, credentials, forcePathStyle: true });
+      const presignEndpoint = config.get<string>("S3_PRESIGN_ENDPOINT") ?? endpoint;
+      this.s3Presign =
+        presignEndpoint === endpoint
+          ? this.s3
+          : new S3Client({ region, endpoint: presignEndpoint, credentials, forcePathStyle: true });
+      this.logger.log(`Storage: S3 ${endpoint} (presign: ${presignEndpoint})`);
     } else {
-      this.logger.warn("Storage: local ./uploads (chưa cấu hình R2_*)");
+      this.logger.warn("Storage: local ./uploads (chưa cấu hình S3_*)");
     }
   }
 
@@ -74,6 +87,25 @@ export class StorageService {
     } catch {
       // file không tồn tại — bỏ qua
     }
+  }
+
+  /** Đang dùng S3 storage (R2/MinIO) hay local filesystem. */
+  isS3(): boolean {
+    return this.s3 != null;
+  }
+
+  /**
+   * Presigned PUT URL cho upload trực tiếp lên storage (R2/MinIO).
+   * Dùng client trỏ endpoint public — host nằm trong chữ ký SigV4.
+   * Trả null khi chạy local — dùng endpoint /uploads/local thay thế.
+   */
+  async presign(key: string, contentType: string, expiresInSec = 900): Promise<string | null> {
+    if (!this.s3Presign || !this.bucket) return null;
+    return getSignedUrl(
+      this.s3Presign,
+      new PutObjectCommand({ Bucket: this.bucket, Key: key, ContentType: contentType }),
+      { expiresIn: expiresInSec },
+    );
   }
 
   /** URL public của object theo key. */
