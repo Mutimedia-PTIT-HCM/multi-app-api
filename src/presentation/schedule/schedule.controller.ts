@@ -1,6 +1,7 @@
 import { SystemService } from "@app-application/system";
 import { AppException, CurrentUser, rethrowError, SCHEDULE_ERRORS, StudentAuthGuard } from "@app-common";
 import { UisService, UisSessionService } from "@app-infra/uis";
+import { SemesterWeeks, WeekSchedule } from "@app-type";
 import { Controller, Get, HttpStatus, Param, ParseIntPipe, Query, UseGuards } from "@nestjs/common";
 import { ApiBearerAuth, ApiOperation, ApiQuery, ApiTags } from "@nestjs/swagger";
 
@@ -19,7 +20,10 @@ export class ScheduleController {
   @Get("weeks")
   @ApiOperation({ summary: "Số tuần của học kỳ hiện tại + tuần hiện tại" })
   @ApiQuery({ name: "date", required: false, example: "20/10/2025", description: "dd/mm/yyyy" })
-  async getWeeks(@CurrentUser("studentCode") code: string, @Query("date") date?: string) {
+  async getWeeks(
+    @CurrentUser("studentCode") code: string,
+    @Query("date") date?: string,
+  ): Promise<SemesterWeeks> {
     try {
       const sess = await this.session.getSession(code);
       const semester = await this.system.getCurrentSemester();
@@ -42,7 +46,7 @@ export class ScheduleController {
     @CurrentUser("studentCode") code: string,
     @Param("week", ParseIntPipe) week: number,
     @Query("date") _date?: string,
-  ) {
+  ): Promise<WeekSchedule> {
     try {
       if (week < 1) throw new AppException(HttpStatus.BAD_REQUEST, SCHEDULE_ERRORS.INVALID_WEEK);
       const sess = await this.session.getSession(code);

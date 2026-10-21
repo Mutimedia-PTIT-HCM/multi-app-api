@@ -1,5 +1,6 @@
 import { CurrentUser, rethrowError, StudentAuthGuard } from "@app-common";
 import { UisService, UisSessionService } from "@app-infra/uis";
+import { SemesterPoint } from "@app-type";
 import { Controller, Get, UseGuards } from "@nestjs/common";
 import { ApiBearerAuth, ApiOperation, ApiTags } from "@nestjs/swagger";
 
@@ -16,7 +17,7 @@ export class AcademicPointsController {
 
   @Get()
   @ApiOperation({ summary: "Điểm học tập toàn khoá — crawl trực tiếp UIS" })
-  async getPoints(@CurrentUser("studentCode") code: string) {
+  async getPoints(@CurrentUser("studentCode") code: string): Promise<SemesterPoint[]> {
     try {
       const sess = await this.session.getSession(code);
       return this.uis.getAllPoints(sess);

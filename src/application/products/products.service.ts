@@ -2,8 +2,22 @@ import { AppException, PRODUCT_ERRORS, toPaginated, toPrismaPage } from "@app-co
 import { PrismaService } from "@app-infra/prisma";
 import { PushService } from "@app-infra/push";
 import { StorageService } from "@app-infra/storage";
-import { PaginationQuery, UploadedFilePayload } from "@app-type";
+import {
+  OrderItem,
+  OrderWithBuyerProductRow,
+  OrderWithProductRow,
+  OrderWithProductSellerRow,
+  PaginatedResult,
+  PaginationQuery,
+  ProductItem,
+  ProductListRow,
+  ProductSeller,
+  ProductSellerRefRow,
+  ProductWithSellerRow,
+  UploadedFilePayload,
+} from "@app-type";
 import { HttpStatus, Injectable } from "@nestjs/common";
+import type { Product } from "@prisma/client";
 
 @Injectable()
 export class ProductsService {
@@ -17,14 +31,14 @@ export class ProductsService {
     sellerCode: string,
     input: { name: string; price?: string; stock: number; description?: string },
     files: UploadedFilePayload[],
-  ) {
+  ): Promise<ProductItem> {
     const keys: string[] = [];
     for (const f of files) {
       const key = this.storage.generateKey("products", f.originalname);
       await this.storage.upload(key, f.buffer, f.mimetype);
       keys.push(key);
     }
-    const product = await this.prisma.product.create({
+    const product: Product = await this.prisma.product.create({
       data: {
         productCode: Date.now().toString(),
         sellerCode,
@@ -38,9 +52,9 @@ export class ProductsService {
     return this.withUrls(product);
   }
 
-  async list(productCodes: string[] | undefined, q: PaginationQuery) {
+  async list(productCodes: string[] | undefined, q: PaginationQuery): Promise<PaginatedResult<ProductItem>> {
     const where = productCodes ? { productCode: { in: productCodes } } : {};
-    const [total, products] = await Promise.all([
+    const [total, products]: [number, ProductListRow[]] = await Promise.all([
       this.prisma.product.count({ where }),
       this.prisma.product.findMany({
         where,
@@ -56,8 +70,8 @@ export class ProductsService {
     );
   }
 
-  async getByCode(productCode: string) {
-    const product = await this.prisma.product.findUnique({
+  async getByCode(productCode: string): Promise<ProductItem> {
+    const product: ProductWithSellerRow | null = await this.prisma.product.findUnique({
       where: { productCode },
       include: { seller: { select: { fullName: true, avatarKey: true } } },
     });
@@ -65,13 +79,16 @@ export class ProductsService {
     return this.withUrls(product);
   }
 
-  async placeOrders(buyerCode: string, items: { productCode: string; quantity: number; note: string }[]) {
+  async placeOrders(
+    buyerCode: string,
+    items: { productCode: string; quantity: number; note: string }[],
+  ): Promise<void> {
     if (items.length === 0) throw new AppException(HttpStatus.BAD_REQUEST, PRODUCT_ERRORS.EMPTY_ORDER);
-    const products = await this.prisma.product.findMany({
+    const products: ProductSellerRefRow[] = await this.prisma.product.findMany({
       where: { productCode: { in: items.map((i) => i.productCode) } },
       select: { productCode: true, sellerCode: true },
     });
-    const productMap = new Map(products.map((p) => [p.productCode, p]));
+    const productMap = new Map<string, ProductSellerRefRow>(products.map((p) => [p.productCode, p]));
     for (const item of items) {
       const product = productMap.get(item.productCode);
       if (!product) {
@@ -113,8 +130,8 @@ export class ProductsService {
   }
 
   /** Đơn mình đã mua. */
-  async myOrders(buyerCode: string, q: PaginationQuery) {
-    const [total, orders] = await Promise.all([
+  async myOrders(buyerCode: string, q: PaginationQuery): Promise<PaginatedResult<OrderItem>> {
+    const [total, orders]: [number, OrderWithProductSellerRow[]] = await Promise.all([
       this.prisma.order.count({ where: { buyerCode } }),
       this.prisma.order.findMany({
         where: { buyerCode },
@@ -133,9 +150,9 @@ export class ProductsService {
   }
 
   /** Đơn người khác đặt ấn phẩm mình. */
-  async receivedOrders(sellerCode: string, q: PaginationQuery) {
+  async receivedOrders(sellerCode: string, q: PaginationQuery): Promise<PaginatedResult<OrderItem>> {
     const where = { product: { sellerCode } };
-    const [total, orders] = await Promise.all([
+    const [total, orders]: [number, OrderWithBuyerProductRow[]] = await Promise.all([
       this.prisma.order.count({ where }),
       this.prisma.order.findMany({
         where,
@@ -154,7 +171,7 @@ export class ProductsService {
     );
   }
 
-  async cancel(orderCode: string, studentCode: string) {
+  async cancel(orderCode: string, studentCode: string): Promise<void> {
     const order = await this.getOrderOr404(orderCode);
     const isBuyer = order.buyerCode === studentCode;
     const isSeller = order.product.sellerCode === studentCode;
@@ -163,19 +180,19 @@ export class ProductsService {
   }
 
   /** Seller xác nhận đơn (state -1 → 0). */
-  async confirm(orderCode: string, studentCode: string) {
+  async confirm(orderCode: string, studentCode: string): Promise<void> {
     await this.assertSeller(orderCode, studentCode);
     await this.prisma.order.update({ where: { orderCode }, data: { status: 0 } });
   }
 
   /** Seller hoàn thành đơn (→ 1). */
-  async done(orderCode: string, studentCode: string) {
+  async done(orderCode: string, studentCode: string): Promise<void> {
     await this.assertSeller(orderCode, studentCode);
     await this.prisma.order.update({ where: { orderCode }, data: { status: 1 } });
   }
 
   private async getOrderOr404(orderCode: string) {
-    const order = await this.prisma.order.findUnique({
+    const order: OrderWithProductRow | null = await this.prisma.order.findUnique({
       where: { orderCode },
       include: { product: true },
     });
@@ -190,19 +207,22 @@ export class ProductsService {
     }
   }
 
-  private withUrls<T extends { imageKeys: string; seller?: object | null }>(p: T) {
+  private withUrls<T extends { imageKeys: string; seller?: object | null }>(
+    p: T,
+  ): T & { imageUrls: string[]; seller: ProductSeller | null } {
     const seller = p.seller as { avatarKey?: string | null } | null | undefined;
     return {
       ...p,
       imageUrls: this.storage.urls(p.imageKeys),
-      seller:
-        seller && "avatarKey" in seller
-          ? { ...seller, avatarUrl: this.storage.url(seller.avatarKey ?? null) }
-          : p.seller,
+      seller: (seller && "avatarKey" in seller
+        ? { ...seller, avatarUrl: this.storage.url(seller.avatarKey ?? null) }
+        : p.seller) as ProductSeller | null,
     };
   }
 
-  private orderWithUrls<T extends { product: { imageKeys: string } }>(o: T) {
+  private orderWithUrls<T extends { product: { imageKeys: string } }>(
+    o: T,
+  ): T & { product: T["product"] & { imageUrls: string[] } } {
     return {
       ...o,
       product: { ...o.product, imageUrls: this.storage.urls(o.product.imageKeys) },

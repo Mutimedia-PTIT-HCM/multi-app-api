@@ -7,7 +7,7 @@ import {
   rethrowError,
   StudentAuthGuard,
 } from "@app-common";
-import { UploadedFilePayload } from "@app-type";
+import { NotificationItem, PaginatedResult, UploadedFilePayload } from "@app-type";
 import {
   Body,
   Controller,
@@ -34,7 +34,10 @@ export class NotificationsController {
   @Get()
   @ApiOperation({ summary: "Thông báo gửi tới mình — phân trang" })
   @UseGuards(StudentAuthGuard)
-  async listMine(@CurrentUser("studentCode") code: string, @Query() q: PaginationQueryDto) {
+  async listMine(
+    @CurrentUser("studentCode") code: string,
+    @Query() q: PaginationQueryDto,
+  ): Promise<ApiResult<PaginatedResult<NotificationItem>>> {
     try {
       return new ApiResult("Thành công", await this.notifications.listMine(code, q));
     } catch (e) {
@@ -49,7 +52,7 @@ export class NotificationsController {
   async markRead(
     @CurrentUser("studentCode") code: string,
     @Param("recipientId", ParseIntPipe) recipientId: number,
-  ) {
+  ): Promise<ApiResult<null>> {
     try {
       await this.notifications.markRead(code, recipientId);
       return new ApiResult("Thành công", null);
@@ -83,7 +86,7 @@ export class NotificationsController {
     @CurrentUser("studentCode") code: string,
     @Body() body: Record<string, string>,
     @UploadedFiles() files: UploadedFilePayload[],
-  ) {
+  ): Promise<ApiResult<null>> {
     try {
       await this.notifications.send(
         code,

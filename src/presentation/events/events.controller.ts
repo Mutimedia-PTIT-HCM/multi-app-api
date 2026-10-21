@@ -7,7 +7,7 @@ import {
   rethrowError,
   StudentAuthGuard,
 } from "@app-common";
-import { UploadedFilePayload } from "@app-type";
+import { AttendanceItem, EventItem, PaginatedResult, UploadedFilePayload } from "@app-type";
 import {
   Body,
   Controller,
@@ -37,7 +37,7 @@ export class EventsController {
   @Get()
   @ApiOperation({ summary: "Danh sách sự kiện — phân trang" })
   @UseGuards(StudentAuthGuard)
-  async list(@Query() q: PaginationQueryDto) {
+  async list(@Query() q: PaginationQueryDto): Promise<ApiResult<PaginatedResult<EventItem>>> {
     try {
       return new ApiResult("Thành công", await this.events.list(q));
     } catch (e) {
@@ -54,7 +54,7 @@ export class EventsController {
     @CurrentUser("studentCode") code: string,
     @Param("eventCode") eventCode: string,
     @Body("location") location?: string,
-  ) {
+  ): Promise<ApiResult<null>> {
     try {
       await this.events.checkIn(code, eventCode, location);
       return new ApiResult("Check in thành công, chúc bạn tham gia sự kiện vui vẻ", null);
@@ -87,7 +87,7 @@ export class EventsController {
     @Body("title") title: string,
     @Body("content") content: string,
     @UploadedFile() thumb?: UploadedFilePayload,
-  ) {
+  ): Promise<ApiResult<EventItem>> {
     try {
       const event = await this.events.create(code, title ?? "", content ?? "", thumb);
       return new ApiResult("Thành công", event);
@@ -103,7 +103,7 @@ export class EventsController {
     @Param("eventCode") eventCode: string,
     @CurrentUser("studentCode") code: string,
     @CurrentUser("role") role: number,
-  ) {
+  ): Promise<ApiResult<null>> {
     try {
       await this.events.remove(eventCode, code, role);
       return new ApiResult("Thành công", null);
@@ -116,7 +116,7 @@ export class EventsController {
   @Get(":eventCode/qr")
   @ApiOperation({ summary: "QR check-in PNG — stream trực tiếp (chief)" })
   @UseGuards(ChiefAuthGuard)
-  async qr(@Param("eventCode") eventCode: string, @Res() res: Response) {
+  async qr(@Param("eventCode") eventCode: string, @Res() res: Response): Promise<void> {
     try {
       const png = await this.events.qrPng(eventCode);
       res.type("image/png").send(png);
@@ -128,7 +128,7 @@ export class EventsController {
   @Get(":eventCode/attendance")
   @ApiOperation({ summary: "Danh sách điểm danh sự kiện (chief)" })
   @UseGuards(ChiefAuthGuard)
-  async attendance(@Param("eventCode") eventCode: string) {
+  async attendance(@Param("eventCode") eventCode: string): Promise<ApiResult<AttendanceItem[]>> {
     try {
       return new ApiResult("Thành công", await this.events.attendance(eventCode));
     } catch (e) {

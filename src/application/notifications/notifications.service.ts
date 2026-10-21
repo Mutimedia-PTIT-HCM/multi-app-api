@@ -2,8 +2,17 @@ import { AppException, NOTIFICATION_ERRORS, STUDENT_ERRORS, toPaginated, toPrism
 import { PrismaService } from "@app-infra/prisma";
 import { PushService } from "@app-infra/push";
 import { StorageService } from "@app-infra/storage";
-import { PaginationQuery, SchedulePayload, UploadedFilePayload } from "@app-type";
+import {
+  ClassCodeRow,
+  NotificationItem,
+  NotificationRecipientRow,
+  PaginatedResult,
+  PaginationQuery,
+  SchedulePayload,
+  UploadedFilePayload,
+} from "@app-type";
 import { HttpStatus, Injectable } from "@nestjs/common";
+import type { Notification, NotificationRecipient } from "@prisma/client";
 
 @Injectable()
 export class NotificationsService {
@@ -14,8 +23,8 @@ export class NotificationsService {
   ) {}
 
   /** Thông báo gửi tới mình (mới nhất trước). */
-  async listMine(studentCode: string, q: PaginationQuery) {
-    const [total, rows] = await Promise.all([
+  async listMine(studentCode: string, q: PaginationQuery): Promise<PaginatedResult<NotificationItem>> {
+    const [total, rows]: [number, NotificationRecipientRow[]] = await Promise.all([
       this.prisma.notificationRecipient.count({ where: { studentCode } }),
       this.prisma.notificationRecipient.findMany({
         where: { studentCode },
@@ -52,8 +61,10 @@ export class NotificationsService {
     );
   }
 
-  async markRead(studentCode: string, recipientId: number) {
-    const row = await this.prisma.notificationRecipient.findUnique({ where: { id: recipientId } });
+  async markRead(studentCode: string, recipientId: number): Promise<void> {
+    const row: NotificationRecipient | null = await this.prisma.notificationRecipient.findUnique({
+      where: { id: recipientId },
+    });
     if (!row || row.studentCode !== studentCode) {
       throw new AppException(HttpStatus.NOT_FOUND, NOTIFICATION_ERRORS.NOT_FOUND);
     }
@@ -68,8 +79,8 @@ export class NotificationsService {
     posterCode: string,
     input: { title: string; content: string; type: string } & SchedulePayload,
     files: UploadedFilePayload[],
-  ) {
-    const poster = await this.prisma.student.findUnique({
+  ): Promise<void> {
+    const poster: ClassCodeRow | null = await this.prisma.student.findUnique({
       where: { studentCode: posterCode },
       select: { classCode: true },
     });
@@ -84,7 +95,7 @@ export class NotificationsService {
     }
 
     const notificationCode = Date.now().toString();
-    await this.prisma.notification.create({
+    const _created: Notification = await this.prisma.notification.create({
       data: {
         notificationCode,
         title: input.title,

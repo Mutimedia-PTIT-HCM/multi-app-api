@@ -21,7 +21,10 @@ export class ClassesController {
   /** Đổi role của 1 SV: role 7 set tuỳ ý (<8); role 3 set trừ 7 (giữ rule legacy). */
   @Put("role")
   @ApiOperation({ summary: "Đổi role của 1 SV (role 7 full quyền, role 3 trừ 7)" })
-  async updateRole(@CurrentUser() user: { studentCode: string; role: number }, @Body() dto: UpdateRoleDto) {
+  async updateRole(
+    @CurrentUser() user: { studentCode: string; role: number },
+    @Body() dto: UpdateRoleDto,
+  ): Promise<ApiResult<null>> {
     try {
       if (user.role === 7) {
         // full quyền
@@ -42,12 +45,15 @@ export class ClassesController {
   /** Crawl lại malop toàn khoá từ UIS — job nền (BullMQ), trả ngay jobId. */
   @Put("sync")
   @ApiOperation({ summary: "Crawl lại malop toàn khoá từ UIS — job nền, trả jobId" })
-  async syncClass(@CurrentUser() user: { studentCode: string; role: number }) {
+  async syncClass(
+    @CurrentUser("studentCode") code: string,
+    @CurrentUser("role") role: number,
+  ): Promise<ApiResult<{ jobId: string }>> {
     try {
-      if (user.role === 6 || user.role === 0) {
+      if (role === 6 || role === 0) {
         throw new AppException(HttpStatus.BAD_REQUEST, CLASS_ERRORS.COMMITTEE_ONLY);
       }
-      const jobId = await this.classes.queueClassSync(user.studentCode);
+      const jobId = await this.classes.queueClassSync(code);
       return new ApiResult("Đã xếp hàng đợi cập nhật", { jobId });
     } catch (e) {
       rethrowError(e);

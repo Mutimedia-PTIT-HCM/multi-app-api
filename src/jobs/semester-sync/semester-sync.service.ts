@@ -1,6 +1,7 @@
 import { SystemService } from "@app-application/system";
 import { PrismaService } from "@app-infra/prisma";
 import { UisService, UisSessionService } from "@app-infra/uis";
+import { StudentCodeRow } from "@app-type";
 import { Injectable, Logger } from "@nestjs/common";
 import { Cron } from "@nestjs/schedule";
 
@@ -26,7 +27,7 @@ export class SemesterSyncService {
       const next = this.system.nextSemester(current);
 
       // Lấy session của 1 SV bất kỳ còn credential để đọc TKB
-      const sample = await this.prisma.student.findFirst({
+      const sample: StudentCodeRow | null = await this.prisma.student.findFirst({
         where: { uisRefreshToken: { not: null } },
         orderBy: { studentCode: "desc" },
         select: { studentCode: true },

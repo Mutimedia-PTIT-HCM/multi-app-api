@@ -1,5 +1,6 @@
 import { MessagesService } from "@app-application/messages";
 import { ApiResult, CurrentUser, PaginationQueryDto, rethrowError, StudentAuthGuard } from "@app-common";
+import { ConversationItem, MessageItem, PaginatedResult } from "@app-type";
 import { Controller, Delete, Get, Param, Query, UseGuards } from "@nestjs/common";
 import { ApiBearerAuth, ApiOperation, ApiParam, ApiTags } from "@nestjs/swagger";
 
@@ -13,7 +14,7 @@ export class MessagesController {
   /** Danh sách hội thoại + tin nhắn cuối mỗi peer. */
   @Get("conversations")
   @ApiOperation({ summary: "Danh sách hội thoại + tin nhắn cuối mỗi peer" })
-  async conversations(@CurrentUser("studentCode") code: string) {
+  async conversations(@CurrentUser("studentCode") code: string): Promise<ApiResult<ConversationItem[]>> {
     try {
       return new ApiResult("Lấy tin nhắn thành công", await this.messages.conversations(code));
     } catch (e) {
@@ -29,7 +30,7 @@ export class MessagesController {
     @CurrentUser("studentCode") code: string,
     @Param("peerCode") peer: string,
     @Query() q: PaginationQueryDto,
-  ) {
+  ): Promise<ApiResult<PaginatedResult<MessageItem>>> {
     try {
       return new ApiResult(
         "Lấy tin nhắn thành công",
@@ -42,7 +43,10 @@ export class MessagesController {
 
   @Delete(":messageCode")
   @ApiOperation({ summary: "Thu hồi tin nhắn của mình" })
-  async remove(@CurrentUser("studentCode") code: string, @Param("messageCode") messageCode: string) {
+  async remove(
+    @CurrentUser("studentCode") code: string,
+    @Param("messageCode") messageCode: string,
+  ): Promise<ApiResult<null>> {
     try {
       await this.messages.remove(code, messageCode);
       return new ApiResult("Thành công", null);

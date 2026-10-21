@@ -1,6 +1,7 @@
 import { CLASS_SYNC_QUEUE } from "@app-common";
 import { PrismaService } from "@app-infra/prisma";
 import { UisService, UisSessionService } from "@app-infra/uis";
+import { StudentCodeRow } from "@app-type";
 import { Processor, WorkerHost } from "@nestjs/bullmq";
 import { Logger } from "@nestjs/common";
 import { Job } from "bullmq";
@@ -28,7 +29,7 @@ export class ClassSyncProcessor extends WorkerHost {
     const { classCode } = job.data;
     // Khóa = 2 ký tự sau chữ cái đầu của mã lớp (legacy: slice(1,3))
     const academicYear = classCode.slice(1, 3);
-    const students = await this.prisma.student.findMany({
+    const students: StudentCodeRow[] = await this.prisma.student.findMany({
       where: {
         classCode: { contains: academicYear },
         uisRefreshToken: { not: null },

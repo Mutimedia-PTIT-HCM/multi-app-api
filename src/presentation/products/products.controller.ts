@@ -1,6 +1,6 @@
 import { ProductsService } from "@app-application/products";
 import { ApiResult, CurrentUser, PaginationQueryDto, rethrowError, StudentAuthGuard } from "@app-common";
-import { UploadedFilePayload } from "@app-type";
+import { OrderItem, PaginatedResult, ProductItem, UploadedFilePayload } from "@app-type";
 import {
   Body,
   Controller,
@@ -14,7 +14,15 @@ import {
   UseInterceptors,
 } from "@nestjs/common";
 import { FilesInterceptor } from "@nestjs/platform-express";
-import { ApiBearerAuth, ApiBody, ApiConsumes, ApiOperation, ApiParam, ApiQuery, ApiTags } from "@nestjs/swagger";
+import {
+  ApiBearerAuth,
+  ApiBody,
+  ApiConsumes,
+  ApiOperation,
+  ApiParam,
+  ApiQuery,
+  ApiTags,
+} from "@nestjs/swagger";
 import { CreateOrderDto } from "./dto/create-order.dto";
 
 @ApiTags("Products & Orders")
@@ -48,7 +56,7 @@ export class ProductsController {
     @CurrentUser("studentCode") code: string,
     @Body() body: Record<string, string>,
     @UploadedFiles() files: UploadedFilePayload[],
-  ) {
+  ): Promise<ApiResult<ProductItem>> {
     try {
       const product = await this.products.create(
         code,
@@ -69,8 +77,16 @@ export class ProductsController {
   /** Danh sách ấn phẩm — ?codes=a,b,c lọc theo mã. */
   @Get("products")
   @ApiOperation({ summary: "Danh sách ấn phẩm — phân trang" })
-  @ApiQuery({ name: "codes", required: false, description: "Lọc theo mã, phân cách bởi dấu phẩy", example: "123,456" })
-  async list(@Query("codes") codes: string | undefined, @Query() q: PaginationQueryDto) {
+  @ApiQuery({
+    name: "codes",
+    required: false,
+    description: "Lọc theo mã, phân cách bởi dấu phẩy",
+    example: "123,456",
+  })
+  async list(
+    @Query("codes") codes: string | undefined,
+    @Query() q: PaginationQueryDto,
+  ): Promise<ApiResult<PaginatedResult<ProductItem>>> {
     try {
       const list = codes
         ?.split(",")
@@ -85,7 +101,7 @@ export class ProductsController {
   @Get("products/:productCode")
   @ApiOperation({ summary: "Chi tiết 1 ấn phẩm" })
   @ApiParam({ name: "productCode" })
-  async getOne(@Param("productCode") productCode: string) {
+  async getOne(@Param("productCode") productCode: string): Promise<ApiResult<ProductItem>> {
     try {
       return new ApiResult("Lấy ấn phẩm thành công", await this.products.getByCode(productCode));
     } catch (e) {
@@ -99,7 +115,10 @@ export class ProductsController {
   @Post("orders")
   @ApiOperation({ summary: "Đặt hàng nhiều ấn phẩm cùng lúc" })
   @ApiBody({ type: [CreateOrderDto] })
-  async placeOrders(@CurrentUser("studentCode") code: string, @Body() items: CreateOrderDto[]) {
+  async placeOrders(
+    @CurrentUser("studentCode") code: string,
+    @Body() items: CreateOrderDto[],
+  ): Promise<ApiResult<null>> {
     try {
       await this.products.placeOrders(code, items);
       return new ApiResult(
@@ -114,7 +133,10 @@ export class ProductsController {
   /** Đơn mình đã mua. */
   @Get("orders/mine")
   @ApiOperation({ summary: "Đơn mình đã mua — phân trang" })
-  async myOrders(@CurrentUser("studentCode") code: string, @Query() q: PaginationQueryDto) {
+  async myOrders(
+    @CurrentUser("studentCode") code: string,
+    @Query() q: PaginationQueryDto,
+  ): Promise<ApiResult<PaginatedResult<OrderItem>>> {
     try {
       return new ApiResult("Lấy đơn hàng thành công", await this.products.myOrders(code, q));
     } catch (e) {
@@ -125,7 +147,10 @@ export class ProductsController {
   /** Đơn người khác mua ấn phẩm mình. */
   @Get("orders/received")
   @ApiOperation({ summary: "Đơn người khác mua ấn phẩm mình — phân trang" })
-  async receivedOrders(@CurrentUser("studentCode") code: string, @Query() q: PaginationQueryDto) {
+  async receivedOrders(
+    @CurrentUser("studentCode") code: string,
+    @Query() q: PaginationQueryDto,
+  ): Promise<ApiResult<PaginatedResult<OrderItem>>> {
     try {
       return new ApiResult("Lấy đơn hàng thành công", await this.products.receivedOrders(code, q));
     } catch (e) {
@@ -135,7 +160,10 @@ export class ProductsController {
 
   @Delete("orders/:orderCode")
   @ApiOperation({ summary: "Huỷ đơn (buyer hoặc seller)" })
-  async cancel(@CurrentUser("studentCode") code: string, @Param("orderCode") orderCode: string) {
+  async cancel(
+    @CurrentUser("studentCode") code: string,
+    @Param("orderCode") orderCode: string,
+  ): Promise<ApiResult<null>> {
     try {
       await this.products.cancel(orderCode, code);
       return new ApiResult("Thành công", null);
@@ -146,7 +174,10 @@ export class ProductsController {
 
   @Post("orders/:orderCode/confirm")
   @ApiOperation({ summary: "Seller xác nhận đơn" })
-  async confirm(@CurrentUser("studentCode") code: string, @Param("orderCode") orderCode: string) {
+  async confirm(
+    @CurrentUser("studentCode") code: string,
+    @Param("orderCode") orderCode: string,
+  ): Promise<ApiResult<null>> {
     try {
       await this.products.confirm(orderCode, code);
       return new ApiResult("Thành công", null);
@@ -157,7 +188,10 @@ export class ProductsController {
 
   @Post("orders/:orderCode/done")
   @ApiOperation({ summary: "Seller hoàn thành đơn" })
-  async done(@CurrentUser("studentCode") code: string, @Param("orderCode") orderCode: string) {
+  async done(
+    @CurrentUser("studentCode") code: string,
+    @Param("orderCode") orderCode: string,
+  ): Promise<ApiResult<null>> {
     try {
       await this.products.done(orderCode, code);
       return new ApiResult("Thành công", null);

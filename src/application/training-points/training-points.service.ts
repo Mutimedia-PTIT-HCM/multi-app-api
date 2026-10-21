@@ -1,8 +1,20 @@
 import { AppException, PRIVILEGED_ROLES, STUDENT_ERRORS, TRAINING_POINT_ERRORS } from "@app-common";
 import { PrismaService } from "@app-infra/prisma";
 import { StorageService } from "@app-infra/storage";
-import { UploadedFilePayload } from "@app-type";
+import {
+  CertImageKeysRow,
+  CertificatesResult,
+  CheckInWithEventRow,
+  ClassCodeRow,
+  ClassFormPointsRow,
+  ClassMemberPoints,
+  ClassMemberRow,
+  FormWithPoints,
+  FormWithPointsRow,
+  UploadedFilePayload,
+} from "@app-type";
 import { HttpStatus, Injectable } from "@nestjs/common";
+import type { Certificate, TrainingPoint, TrainingPointForm, TrainingPointStatus } from "@prisma/client";
 
 @Injectable()
 export class TrainingPointsService {
@@ -14,8 +26,8 @@ export class TrainingPointsService {
   // ===================== STUDENT =====================
 
   /** Form tiêu chí + điểm của 1 SV. */
-  async getFormWithPoints(studentCode: string) {
-    return this.prisma.trainingPointForm.findMany({
+  async getFormWithPoints(studentCode: string): Promise<FormWithPoints[]> {
+    const forms: FormWithPointsRow[] = await this.prisma.trainingPointForm.findMany({
       orderBy: { id: "asc" },
       include: {
         points: {
@@ -24,11 +36,14 @@ export class TrainingPointsService {
         },
       },
     });
+    return forms;
   }
 
-  async selfAssess(studentCode: string, formId: number, point: number) {
+  async selfAssess(studentCode: string, formId: number, point: number): Promise<void> {
     await this.assertClassOpen(studentCode);
-    const form = await this.prisma.trainingPointForm.findUnique({ where: { id: formId } });
+    const form: TrainingPointForm | null = await this.prisma.trainingPointForm.findUnique({
+      where: { id: formId },
+    });
     if (!form) throw new AppException(HttpStatus.NOT_FOUND, TRAINING_POINT_ERRORS.FORM_NOT_FOUND);
     if (form.maxPoint != null && point > form.maxPoint) {
       throw new AppException(HttpStatus.BAD_REQUEST, TRAINING_POINT_ERRORS.POINTS_EXCEED_MAX);
@@ -40,7 +55,7 @@ export class TrainingPointsService {
     });
   }
 
-  async uploadCertificate(studentCode: string, title: string, files: UploadedFilePayload[]) {
+  async uploadCertificate(studentCode: string, title: string, files: UploadedFilePayload[]): Promise<void> {
     await this.assertClassOpen(studentCode);
     const keys: string[] = [];
     for (const f of files) {
@@ -54,8 +69,8 @@ export class TrainingPointsService {
   }
 
   /** Minh chứng: sự kiện đã check-in + cert tự upload. */
-  async getCertificates(studentCode: string) {
-    const [events, individual] = await Promise.all([
+  async getCertificates(studentCode: string): Promise<CertificatesResult> {
+    const [events, individual]: [CheckInWithEventRow[], Certificate[]] = await Promise.all([
       this.prisma.eventCheckIn.findMany({
         where: { studentCode },
         include: { event: true },
@@ -72,13 +87,15 @@ export class TrainingPointsService {
 
   async getStatus(studentCode: string): Promise<boolean> {
     const classCode = await this.getMyClassCode(studentCode);
-    const status = await this.prisma.trainingPointStatus.findUnique({ where: { classCode } });
+    const status: TrainingPointStatus | null = await this.prisma.trainingPointStatus.findUnique({
+      where: { classCode },
+    });
     if (status) return status.isOpen;
     await this.prisma.trainingPointStatus.create({ data: { classCode, isOpen: false } });
     return false;
   }
 
-  async setStatus(studentCode: string, isOpen: boolean) {
+  async setStatus(studentCode: string, isOpen: boolean): Promise<void> {
     const classCode = await this.getMyClassCode(studentCode);
     await this.prisma.trainingPointStatus.upsert({
       where: { classCode },
@@ -88,14 +105,14 @@ export class TrainingPointsService {
   }
 
   /** Điểm rèn luyện cả lớp — 1 query, không N+1. */
-  async getClassPoints(chiefCode: string) {
+  async getClassPoints(chiefCode: string): Promise<ClassMemberPoints[]> {
     const classCode = await this.getMyClassCode(chiefCode);
-    const members = await this.prisma.student.findMany({
+    const members: ClassMemberRow[] = await this.prisma.student.findMany({
       where: { classCode },
       select: { studentCode: true, classCode: true, fullName: true, birthDate: true, avatarKey: true },
       orderBy: { studentCode: "asc" },
     });
-    const forms = await this.prisma.trainingPointForm.findMany({
+    const forms: ClassFormPointsRow[] = await this.prisma.trainingPointForm.findMany({
       orderBy: { id: "asc" },
       include: {
         points: {
@@ -115,9 +132,11 @@ export class TrainingPointsService {
   }
 
   /** Chief chấm pointFinal cho SV (phải cùng lớp). */
-  async reviewPoint(chiefCode: string, studentCode: string, formId: number, point: number) {
+  async reviewPoint(chiefCode: string, studentCode: string, formId: number, point: number): Promise<void> {
     await this.assertSameClass(chiefCode, studentCode);
-    const form = await this.prisma.trainingPointForm.findUnique({ where: { id: formId } });
+    const form: TrainingPointForm | null = await this.prisma.trainingPointForm.findUnique({
+      where: { id: formId },
+    });
     if (!form) throw new AppException(HttpStatus.NOT_FOUND, TRAINING_POINT_ERRORS.FORM_NOT_FOUND);
     if (form.maxPoint != null && point > form.maxPoint) {
       throw new AppException(HttpStatus.BAD_REQUEST, TRAINING_POINT_ERRORS.POINTS_EXCEED_MAX);
@@ -129,20 +148,22 @@ export class TrainingPointsService {
     });
   }
 
-  async deletePoint(chiefCode: string, pointId: number) {
-    const point = await this.prisma.trainingPoint.findUnique({ where: { id: pointId } });
+  async deletePoint(chiefCode: string, pointId: number): Promise<void> {
+    const point: TrainingPoint | null = await this.prisma.trainingPoint.findUnique({
+      where: { id: pointId },
+    });
     if (!point) throw new AppException(HttpStatus.NOT_FOUND, TRAINING_POINT_ERRORS.POINT_NOT_FOUND);
     await this.assertSameClass(chiefCode, point.studentCode);
     await this.prisma.trainingPoint.delete({ where: { id: pointId } });
   }
 
   /** Reset điểm + cert cả lớp — chỉ role 3/4 (giữ nguyên legacy). */
-  async resetClass(chiefCode: string, chiefRole: number) {
+  async resetClass(chiefCode: string, chiefRole: number): Promise<void> {
     if (!PRIVILEGED_ROLES.includes(chiefRole)) {
       throw new AppException(HttpStatus.FORBIDDEN, TRAINING_POINT_ERRORS.FORBIDDEN);
     }
     const classCode = await this.getMyClassCode(chiefCode);
-    const certs = await this.prisma.certificate.findMany({
+    const certs: CertImageKeysRow[] = await this.prisma.certificate.findMany({
       where: { student: { classCode } },
       select: { imageKeys: true },
     });
@@ -159,7 +180,7 @@ export class TrainingPointsService {
   // ===================== HELPERS =====================
 
   private async getMyClassCode(studentCode: string): Promise<string> {
-    const me = await this.prisma.student.findUnique({
+    const me: ClassCodeRow | null = await this.prisma.student.findUnique({
       where: { studentCode },
       select: { classCode: true },
     });
@@ -169,13 +190,15 @@ export class TrainingPointsService {
 
   private async assertClassOpen(studentCode: string) {
     const classCode = await this.getMyClassCode(studentCode);
-    const status = await this.prisma.trainingPointStatus.findUnique({ where: { classCode } });
+    const status: TrainingPointStatus | null = await this.prisma.trainingPointStatus.findUnique({
+      where: { classCode },
+    });
     if (!status?.isOpen)
       throw new AppException(HttpStatus.BAD_REQUEST, TRAINING_POINT_ERRORS.SUBMISSION_CLOSED);
   }
 
   private async assertSameClass(chiefCode: string, studentCode: string) {
-    const [chief, student] = await Promise.all([
+    const [chief, student]: [ClassCodeRow | null, ClassCodeRow | null] = await Promise.all([
       this.prisma.student.findUnique({ where: { studentCode: chiefCode }, select: { classCode: true } }),
       this.prisma.student.findUnique({ where: { studentCode }, select: { classCode: true } }),
     ]);

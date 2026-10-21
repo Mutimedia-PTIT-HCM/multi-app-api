@@ -7,7 +7,13 @@ import {
   rethrowError,
   StudentAuthGuard,
 } from "@app-common";
-import { UploadedFilePayload } from "@app-type";
+import {
+  ClassMember,
+  PaginatedResult,
+  PublicStudent,
+  StudentSearchItem,
+  UploadedFilePayload,
+} from "@app-type";
 import {
   Body,
   Controller,
@@ -46,7 +52,7 @@ export class StudentsController {
     @Query("search") search: string,
     @CurrentUser("studentCode") code: string,
     @Query() q: PaginationQueryDto,
-  ) {
+  ): Promise<ApiResult<PaginatedResult<StudentSearchItem>>> {
     try {
       return new ApiResult("Thành công", await this.students.search(search ?? "", code, q));
     } catch (e) {
@@ -58,7 +64,7 @@ export class StudentsController {
   @Get("me")
   @ApiOperation({ summary: "Hồ sơ của chính mình" })
   @UseGuards(StudentAuthGuard)
-  async getMe(@CurrentUser("studentCode") code: string) {
+  async getMe(@CurrentUser("studentCode") code: string): Promise<ApiResult<PublicStudent>> {
     try {
       return new ApiResult("Lấy thông tin thành công", await this.students.getByCode(code));
     } catch (e) {
@@ -71,7 +77,7 @@ export class StudentsController {
   @ApiOperation({ summary: "Thông tin public của 1 sinh viên" })
   @ApiParam({ name: "studentCode", example: "N18DCPT064" })
   @UseGuards(StudentAuthGuard)
-  async getOne(@Param("studentCode") studentCode: string) {
+  async getOne(@Param("studentCode") studentCode: string): Promise<ApiResult<PublicStudent>> {
     try {
       return new ApiResult("Lấy thông tin sinh viên thành công", await this.students.getByCode(studentCode));
     } catch (e) {
@@ -103,7 +109,7 @@ export class StudentsController {
     @CurrentUser("studentCode") code: string,
     @Body() dto: UpdateProfileDto,
     @UploadedFile() avatar?: UploadedFilePayload,
-  ) {
+  ): Promise<ApiResult<null>> {
     try {
       await this.students.updateProfile(code, dto, avatar);
       return new ApiResult("Cập nhật thông tin thành công", null);
@@ -116,7 +122,10 @@ export class StudentsController {
   @Get("me/class-members")
   @ApiOperation({ summary: "Danh sách thành viên lớp mình (chief) — phân trang" })
   @UseGuards(ChiefAuthGuard)
-  async classMembers(@CurrentUser("studentCode") code: string, @Query() q: PaginationQueryDto) {
+  async classMembers(
+    @CurrentUser("studentCode") code: string,
+    @Query() q: PaginationQueryDto,
+  ): Promise<ApiResult<PaginatedResult<ClassMember>>> {
     try {
       return new ApiResult("Lấy danh sách lớp thành công", await this.students.getClassMembers(code, q));
     } catch (e) {

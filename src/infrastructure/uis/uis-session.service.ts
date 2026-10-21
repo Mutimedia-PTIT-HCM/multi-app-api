@@ -1,7 +1,7 @@
 import { AppException, UIS_ERRORS, UisUnreachableError } from "@app-common";
 import { CredentialCipherService } from "@app-infra/crypto";
 import { PrismaService } from "@app-infra/prisma";
-import { UisSession, UisTokens } from "@app-type";
+import { RefreshTokenRow, UisSession, UisTokenRow, UisTokens } from "@app-type";
 import { HttpStatus, Injectable } from "@nestjs/common";
 import { UisService } from "./uis.service";
 /**
@@ -25,7 +25,7 @@ export class UisSessionService {
   ) {}
 
   async getSession(studentCode: string): Promise<UisSession> {
-    const student = await this.prisma.student.findUnique({
+    const student: UisTokenRow | null = await this.prisma.student.findUnique({
       where: { studentCode },
       select: {
         uisAccessToken: true,
@@ -75,7 +75,7 @@ export class UisSessionService {
 
   /** Cron dùng: ép renew token, bỏ qua cache access token. */
   async forceRenew(studentCode: string): Promise<boolean> {
-    const student = await this.prisma.student.findUnique({
+    const student: RefreshTokenRow | null = await this.prisma.student.findUnique({
       where: { studentCode },
       select: { uisRefreshToken: true },
     });

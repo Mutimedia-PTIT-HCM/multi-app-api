@@ -49,6 +49,13 @@ legacy/                   # code Express cũ + multidb.sql — READ ONLY
 - Endpoint multipart (upload): `@ApiConsumes("multipart/form-data")` + `@ApiBody({schema})` với field `format: "binary"` để Swagger UI render file picker.
 - DTO luôn có `@ApiProperty`/`@ApiPropertyOptional` kèm `example` để test được ngay trong Swagger UI.
 - Route infra (health, static file) dùng `@ApiExcludeEndpoint()` để không lọt vào docs.
+
+## Typing
+
+- Mọi service method và controller handler BẮT BUỘC khai báo return type tường minh — cấm để inference trả `any`/shape ẩn.
+- Response shape khai báo trong `app-type/<domain>/<name>.type.ts`, derive từ Prisma model (`import type { X } from "@prisma/client"`) + `Omit`/`&` cho field thêm/bớt (avatarUrl, imageUrls…).
+- Nullable field trong schema (fullName, birthDate…) phải phản ánh `| null` trong view type.
+- List endpoint trả `PaginatedResult<T>` với `T` là item type cụ thể — không `PaginatedResult<unknown>`.
 - Thêm export mới → export qua `index.ts` của thư mục.
 - Import cùng thư mục (`./foo`, `./dto/foo`) giữ nguyên relative.
 - tsconfig `paths: {"@app-type": ["./src/app-type"], "@app-*": ["./src/*"]}`; sau `tsc`, `scripts/fix-dist-paths.js` rewrite `require("@app-...")` trong dist (đã gắn trong `npm run build`) — prefix `@app-` không trùng npm scoped packages.

@@ -2,8 +2,18 @@ import { AppException, EVENT_ERRORS, toPaginated, toPrismaPage } from "@app-comm
 import { PrismaService } from "@app-infra/prisma";
 import { PushService } from "@app-infra/push";
 import { StorageService } from "@app-infra/storage";
-import { PaginationQuery, UploadedFilePayload } from "@app-type";
+import {
+  AttendanceItem,
+  CheckInWithStudentRow,
+  EventItem,
+  EventQrRow,
+  EventWithPosterRow,
+  PaginatedResult,
+  PaginationQuery,
+  UploadedFilePayload,
+} from "@app-type";
 import { HttpStatus, Injectable } from "@nestjs/common";
+import type { Event, EventCheckIn } from "@prisma/client";
 import QRCode from "qrcode";
 
 @Injectable()
@@ -14,8 +24,8 @@ export class EventsService {
     private readonly push: PushService,
   ) {}
 
-  async list(q: PaginationQuery) {
-    const [total, events] = await Promise.all([
+  async list(q: PaginationQuery): Promise<PaginatedResult<EventItem>> {
+    const [total, events]: [number, EventWithPosterRow[]] = await Promise.all([
       this.prisma.event.count(),
       this.prisma.event.findMany({
         orderBy: { createdAt: "desc" },
@@ -30,11 +40,16 @@ export class EventsService {
     );
   }
 
-  async create(posterCode: string, title: string, content: string, thumb?: UploadedFilePayload) {
+  async create(
+    posterCode: string,
+    title: string,
+    content: string,
+    thumb?: UploadedFilePayload,
+  ): Promise<EventItem> {
     if (!thumb) throw new AppException(HttpStatus.BAD_REQUEST, EVENT_ERRORS.MISSING_POSTER);
     const thumbnailKey = this.storage.generateKey("event/thumb", thumb.originalname);
     await this.storage.upload(thumbnailKey, thumb.buffer, thumb.mimetype);
-    const event = await this.prisma.event.create({
+    const event: Event = await this.prisma.event.create({
       data: { eventCode: Date.now().toString(), title, content, thumbnailKey, posterCode },
     });
     this.push.sendToTopics(title, content, ["all"], {
@@ -48,8 +63,8 @@ export class EventsService {
     return this.withUrls(event);
   }
 
-  async remove(eventCode: string, actorCode: string, actorRole: number) {
-    const event = await this.prisma.event.findUnique({ where: { eventCode } });
+  async remove(eventCode: string, actorCode: string, actorRole: number): Promise<void> {
+    const event: Event | null = await this.prisma.event.findUnique({ where: { eventCode } });
     if (!event) throw new AppException(HttpStatus.NOT_FOUND, EVENT_ERRORS.NOT_FOUND);
     if (event.posterCode !== actorCode && actorRole !== 7) {
       throw new AppException(HttpStatus.FORBIDDEN, EVENT_ERRORS.DELETE_FORBIDDEN);
@@ -60,7 +75,7 @@ export class EventsService {
 
   /** QR check-in (JSON {eventCode, eventTime, posterCode}) — trả PNG buffer. */
   async qrPng(eventCode: string): Promise<Buffer> {
-    const event = await this.prisma.event.findUnique({
+    const event: EventQrRow | null = await this.prisma.event.findUnique({
       where: { eventCode },
       select: { eventCode: true, eventTime: true, posterCode: true },
     });
@@ -68,8 +83,8 @@ export class EventsService {
     return QRCode.toBuffer(JSON.stringify(event), { width: 700 });
   }
 
-  async attendance(eventCode: string) {
-    const checkIns = await this.prisma.eventCheckIn.findMany({
+  async attendance(eventCode: string): Promise<AttendanceItem[]> {
+    const checkIns: CheckInWithStudentRow[] = await this.prisma.eventCheckIn.findMany({
       where: { eventCode },
       include: { student: { select: { studentCode: true, fullName: true, avatarKey: true } } },
       orderBy: { checkInAt: "asc" },
@@ -81,10 +96,10 @@ export class EventsService {
     }));
   }
 
-  async checkIn(studentCode: string, eventCode: string, location?: string) {
-    const event = await this.prisma.event.findUnique({ where: { eventCode } });
+  async checkIn(studentCode: string, eventCode: string, location?: string): Promise<void> {
+    const event: Event | null = await this.prisma.event.findUnique({ where: { eventCode } });
     if (!event) throw new AppException(HttpStatus.NOT_FOUND, EVENT_ERRORS.NOT_FOUND);
-    const exists = await this.prisma.eventCheckIn.findUnique({
+    const exists: EventCheckIn | null = await this.prisma.eventCheckIn.findUnique({
       where: { eventCode_studentCode: { eventCode, studentCode } },
     });
     if (exists) throw new AppException(HttpStatus.BAD_REQUEST, EVENT_ERRORS.ALREADY_CHECKED_IN);

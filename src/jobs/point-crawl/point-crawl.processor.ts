@@ -3,9 +3,10 @@ import { POINT_CRAWL_QUEUE, UisUnreachableError } from "@app-common";
 import { PrismaService } from "@app-infra/prisma";
 import { PushService } from "@app-infra/push";
 import { UisService, UisSessionService } from "@app-infra/uis";
-import { UisSession } from "@app-type";
+import { StudentCodeRow, UisSession } from "@app-type";
 import { InjectQueue, Processor, WorkerHost } from "@nestjs/bullmq";
 import { Logger, OnModuleInit } from "@nestjs/common";
+import type { PointSnapshot } from "@prisma/client";
 import { Job, Queue } from "bullmq";
 /**
  * Thay thế legacy `runCheckNewPoint` (while(true) mỗi giờ):
@@ -45,7 +46,7 @@ export class PointCrawlProcessor extends WorkerHost implements OnModuleInit {
   }
 
   private async crawlAll() {
-    const students = await this.prisma.student.findMany({
+    const students: StudentCodeRow[] = await this.prisma.student.findMany({
       where: { uisRefreshToken: { not: null } },
       select: { studentCode: true },
     });
@@ -83,7 +84,7 @@ export class PointCrawlProcessor extends WorkerHost implements OnModuleInit {
     for (const g of gpaList) {
       const semesterCode = `${g.year}${g.semester}`;
       if (semesterCode !== current && semesterCode !== previous) continue;
-      const existing = await this.prisma.pointSnapshot.findUnique({
+      const existing: PointSnapshot | null = await this.prisma.pointSnapshot.findUnique({
         where: { studentCode_semesterCode: { studentCode, semesterCode } },
       });
       if (!existing) {

@@ -1,6 +1,7 @@
 import { TOKEN_REFRESH_QUEUE } from "@app-common";
 import { PrismaService } from "@app-infra/prisma";
 import { UisSessionService } from "@app-infra/uis";
+import { StudentCodeRow } from "@app-type";
 import { InjectQueue, Processor, WorkerHost } from "@nestjs/bullmq";
 import { Logger, OnModuleInit } from "@nestjs/common";
 import { Job, Queue } from "bullmq";
@@ -41,7 +42,7 @@ export class TokenRefreshProcessor extends WorkerHost implements OnModuleInit {
   }
 
   private async renewAll() {
-    const students = await this.prisma.student.findMany({
+    const students: StudentCodeRow[] = await this.prisma.student.findMany({
       where: { uisRefreshToken: { not: null } },
       select: { studentCode: true },
     });

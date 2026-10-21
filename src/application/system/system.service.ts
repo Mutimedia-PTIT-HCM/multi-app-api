@@ -1,6 +1,7 @@
 import { AppException, SYS_ERRORS } from "@app-common";
 import { PrismaService } from "@app-infra/prisma";
 import { HttpStatus, Injectable } from "@nestjs/common";
+import type { SystemConfig } from "@prisma/client";
 
 @Injectable()
 export class SystemService {
@@ -8,13 +9,13 @@ export class SystemService {
 
   /** Học kỳ hiện tại (nhhk), vd '20241'. */
   async getCurrentSemester(): Promise<string> {
-    const config = await this.prisma.systemConfig.findFirst({ orderBy: { id: "asc" } });
+    const config: SystemConfig | null = await this.prisma.systemConfig.findFirst({ orderBy: { id: "asc" } });
     if (!config) throw new AppException(HttpStatus.INTERNAL_SERVER_ERROR, SYS_ERRORS.CONFIG_MISSING);
     return config.semesterCode;
   }
 
   async setCurrentSemester(semesterCode: string): Promise<void> {
-    const config = await this.prisma.systemConfig.findFirst();
+    const config: SystemConfig | null = await this.prisma.systemConfig.findFirst();
     if (config) {
       await this.prisma.systemConfig.update({ where: { id: config.id }, data: { semesterCode } });
     } else {

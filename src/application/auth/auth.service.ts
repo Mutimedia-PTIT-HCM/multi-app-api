@@ -2,10 +2,10 @@ import { AppException, AUTH_ERRORS, NO_CHIEF_ROLES, STUDENT_ROLE, UIS_ERRORS } f
 import { PrismaService } from "@app-infra/prisma";
 import { StorageService } from "@app-infra/storage";
 import { UisService, UisSessionService } from "@app-infra/uis";
-import { TokenScope } from "@app-type";
+import { ChiefLoginResult, PublicStudent, StudentLoginResult, TokenScope } from "@app-type";
 import { HttpStatus, Injectable } from "@nestjs/common";
 import { JwtService } from "@nestjs/jwt";
-import { Student } from "@prisma/client";
+import type { Student } from "@prisma/client";
 
 @Injectable()
 export class AuthService {
@@ -17,7 +17,7 @@ export class AuthService {
     private readonly uisSession: UisSessionService,
   ) {}
 
-  async login(studentCodeRaw: string, password: string) {
+  async login(studentCodeRaw: string, password: string): Promise<StudentLoginResult> {
     const studentCode = studentCodeRaw.toUpperCase();
     const result = await this.uis.login(studentCode, password);
     if (result.status === "unsupported") {
@@ -32,7 +32,7 @@ export class AuthService {
 
     const info = await this.uis.getStudentInfo(result.session);
 
-    const student = await this.prisma.student.upsert({
+    const student: Student = await this.prisma.student.upsert({
       where: { studentCode },
       create: {
         studentCode,
@@ -59,7 +59,7 @@ export class AuthService {
   }
 
   /** Login phân hệ ban cán sự — chỉ cấp chief token. */
-  async loginChief(studentCodeRaw: string, password: string) {
+  async loginChief(studentCodeRaw: string, password: string): Promise<ChiefLoginResult> {
     const studentCode = studentCodeRaw.toUpperCase();
     const result = await this.uis.login(studentCode, password);
     if (result.status === "unsupported") {
@@ -69,13 +69,13 @@ export class AuthService {
       throw new AppException(HttpStatus.BAD_REQUEST, AUTH_ERRORS.INVALID_CREDENTIALS);
     }
 
-    const student = await this.prisma.student.findUnique({ where: { studentCode } });
+    const student: Student | null = await this.prisma.student.findUnique({ where: { studentCode } });
     if (!student || student.role === STUDENT_ROLE) {
       throw new AppException(HttpStatus.UNAUTHORIZED, AUTH_ERRORS.ACCESS_DENIED);
     }
 
     const info = await this.uis.getStudentInfo(result.session);
-    const updated = await this.prisma.student.update({
+    const updated: Student = await this.prisma.student.update({
       where: { studentCode },
       data: { classCode: info.classCode },
     });
@@ -87,7 +87,7 @@ export class AuthService {
     };
   }
 
-  toPublicStudent(student: Student) {
+  toPublicStudent(student: Student): PublicStudent {
     const {
       otp: _otp,
       fcmToken: _fcmToken,

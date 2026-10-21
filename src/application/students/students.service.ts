@@ -2,8 +2,19 @@ import { AuthService } from "@app-application/auth";
 import { AppException, STUDENT_ERRORS, toPaginated, toPrismaPage } from "@app-common";
 import { PrismaService } from "@app-infra/prisma";
 import { StorageService } from "@app-infra/storage";
-import { PaginationQuery, UploadedFilePayload } from "@app-type";
+import {
+  ClassCodeRow,
+  ClassMember,
+  ClassMemberRow,
+  PaginatedResult,
+  PaginationQuery,
+  PublicStudent,
+  StudentSearchItem,
+  StudentSearchRow,
+  UploadedFilePayload,
+} from "@app-type";
 import { HttpStatus, Injectable } from "@nestjs/common";
+import type { Student } from "@prisma/client";
 
 @Injectable()
 export class StudentsService {
@@ -13,20 +24,24 @@ export class StudentsService {
     private readonly auth: AuthService,
   ) {}
 
-  async getByCode(studentCode: string) {
-    const student = await this.prisma.student.findUnique({
+  async getByCode(studentCode: string): Promise<PublicStudent> {
+    const student: Student | null = await this.prisma.student.findUnique({
       where: { studentCode: studentCode.toUpperCase() },
     });
     if (!student) throw new AppException(HttpStatus.NOT_FOUND, STUDENT_ERRORS.NOT_FOUND);
     return this.auth.toPublicStudent(student);
   }
 
-  async search(keyword: string, excludeCode: string, q: PaginationQuery) {
+  async search(
+    keyword: string,
+    excludeCode: string,
+    q: PaginationQuery,
+  ): Promise<PaginatedResult<StudentSearchItem>> {
     const where = {
       OR: [{ fullName: { contains: keyword } }, { studentCode: { contains: keyword.toUpperCase() } }],
       NOT: { studentCode: excludeCode },
     };
-    const [total, students] = await Promise.all([
+    const [total, students]: [number, StudentSearchRow[]] = await Promise.all([
       this.prisma.student.count({ where }),
       this.prisma.student.findMany({
         where,
@@ -53,7 +68,7 @@ export class StudentsService {
       hidePhone?: boolean;
     },
     avatarFile?: UploadedFilePayload,
-  ) {
+  ): Promise<void> {
     let avatarKey: string | undefined;
     if (avatarFile) {
       avatarKey = this.storage.generateKey("avt", avatarFile.originalname);
@@ -66,14 +81,14 @@ export class StudentsService {
   }
 
   /** Danh sách thành viên cùng lớp (dùng cho chief). */
-  async getClassMembers(studentCode: string, q: PaginationQuery) {
-    const me = await this.prisma.student.findUnique({
+  async getClassMembers(studentCode: string, q: PaginationQuery): Promise<PaginatedResult<ClassMember>> {
+    const me: ClassCodeRow | null = await this.prisma.student.findUnique({
       where: { studentCode },
       select: { classCode: true },
     });
     if (!me) throw new AppException(HttpStatus.NOT_FOUND, STUDENT_ERRORS.NOT_FOUND);
     const where = { classCode: me.classCode };
-    const [total, members] = await Promise.all([
+    const [total, members]: [number, ClassMemberRow[]] = await Promise.all([
       this.prisma.student.count({ where }),
       this.prisma.student.findMany({
         where,
