@@ -1,4 +1,3 @@
-import { EventsService } from "@app-application/events";
 import {
   ApiDataResponse,
   ApiResult,
@@ -10,12 +9,14 @@ import {
   rethrowError,
   StudentAuthGuard,
 } from "@app-common";
+import { EVENTS_PORT, IEventsService } from "@app-contracts";
 import { AttendanceItem, EventItem, PaginatedResult, UploadedFilePayload } from "@app-type";
 import {
   Body,
   Controller,
   Delete,
   Get,
+  Inject,
   Param,
   Post,
   Query,
@@ -32,7 +33,7 @@ import { Response } from "express";
 @ApiBearerAuth()
 @Controller("events")
 export class EventsController {
-  constructor(private readonly events: EventsService) {}
+  constructor(@Inject(EVENTS_PORT) private readonly events: IEventsService) {}
 
   // ---------- Student ----------
 

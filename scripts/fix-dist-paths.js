@@ -12,6 +12,7 @@ const DIST = path.resolve(__dirname, "../dist");
 const LAYERS = {
   "@app-type": "app-type",
   "@app-common": "common",
+  "@app-contracts": "contracts",
   "@app-jobs": "jobs",
   "@app-infra": "infrastructure",
   "@app-application": "application",

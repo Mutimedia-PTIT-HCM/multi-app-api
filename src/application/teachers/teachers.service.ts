@@ -1,12 +1,12 @@
 import { toPaginated, toPrismaPage } from "@app-common";
-import { PrismaService } from "@app-infra/prisma";
+import { ITeachersService, PRISMA_PORT, PrismaPort } from "@app-contracts";
 import { PaginatedResult, PaginationQuery } from "@app-type";
-import { Injectable } from "@nestjs/common";
+import { Inject, Injectable } from "@nestjs/common";
 import type { Prisma, Teacher } from "@prisma/client";
 
 @Injectable()
-export class TeachersService {
-  constructor(private readonly prisma: PrismaService) {}
+export class TeachersService implements ITeachersService {
+  constructor(@Inject(PRISMA_PORT) private readonly prisma: PrismaPort) {}
 
   async list(q: PaginationQuery): Promise<PaginatedResult<Teacher>> {
     const [total, teachers]: [number, Teacher[]] = await Promise.all([

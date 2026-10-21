@@ -1,5 +1,5 @@
-import { MessagesService } from "@app-application/messages";
-import { Logger, UseGuards } from "@nestjs/common";
+import { IMessagesService, MESSAGES_PORT } from "@app-contracts";
+import { Inject, Logger, UseGuards } from "@nestjs/common";
 import {
   ConnectedSocket,
   MessageBody,
@@ -25,7 +25,7 @@ export class MessagesGateway implements OnGatewayConnection {
   @WebSocketServer()
   server!: Server;
 
-  constructor(private readonly messages: MessagesService) {}
+  constructor(@Inject(MESSAGES_PORT) private readonly messages: IMessagesService) {}
 
   handleConnection(client: Socket) {
     this.logger.log(`socket connected: ${client.id}`);

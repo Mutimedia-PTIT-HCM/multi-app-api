@@ -1,11 +1,19 @@
-import { SystemService } from "@app-application/system";
 import { POINT_CRAWL_QUEUE, UisUnreachableError } from "@app-common";
-import { PrismaService } from "@app-infra/prisma";
-import { PushService } from "@app-infra/push";
-import { UisService, UisSessionService } from "@app-infra/uis";
+import {
+  IPushService,
+  ISystemService,
+  IUisService,
+  IUisSessionService,
+  PRISMA_PORT,
+  PrismaPort,
+  PUSH_PORT,
+  SYSTEM_PORT,
+  UIS_PORT,
+  UIS_SESSION_PORT,
+} from "@app-contracts";
 import { StudentCodeRow, UisSession } from "@app-type";
 import { InjectQueue, Processor, WorkerHost } from "@nestjs/bullmq";
-import { Logger, OnModuleInit } from "@nestjs/common";
+import { Inject, Logger, OnModuleInit } from "@nestjs/common";
 import type { PointSnapshot } from "@prisma/client";
 import { Job, Queue } from "bullmq";
 /**
@@ -21,11 +29,11 @@ export class PointCrawlProcessor extends WorkerHost implements OnModuleInit {
   private readonly logger = new Logger(PointCrawlProcessor.name);
 
   constructor(
-    private readonly prisma: PrismaService,
-    private readonly uis: UisService,
-    private readonly session: UisSessionService,
-    private readonly push: PushService,
-    private readonly system: SystemService,
+    @Inject(PRISMA_PORT) private readonly prisma: PrismaPort,
+    @Inject(UIS_PORT) private readonly uis: IUisService,
+    @Inject(UIS_SESSION_PORT) private readonly session: IUisSessionService,
+    @Inject(PUSH_PORT) private readonly push: IPushService,
+    @Inject(SYSTEM_PORT) private readonly system: ISystemService,
     @InjectQueue(POINT_CRAWL_QUEUE) private readonly queue: Queue,
   ) {
     super();

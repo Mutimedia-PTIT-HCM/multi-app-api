@@ -1,4 +1,3 @@
-import { AuthService } from "@app-application/auth";
 import {
   ApiDataResponse,
   ApiResult,
@@ -7,15 +6,16 @@ import {
   StudentAuthGuard,
   StudentLoginResultDto,
 } from "@app-common";
+import { AUTH_PORT, IAuthService } from "@app-contracts";
 import { ChiefLoginResult, StudentLoginResult } from "@app-type";
-import { Body, Controller, Get, Post, UseGuards } from "@nestjs/common";
+import { Body, Controller, Get, Inject, Post, UseGuards } from "@nestjs/common";
 import { ApiBearerAuth, ApiOperation, ApiTags } from "@nestjs/swagger";
 import { LoginDto } from "./dto";
 
 @ApiTags("Auth")
 @Controller("auth")
 export class AuthController {
-  constructor(private readonly auth: AuthService) {}
+  constructor(@Inject(AUTH_PORT) private readonly auth: IAuthService) {}
 
   /** Đăng nhập sinh viên — trả student token (+ chief token nếu có quyền). */
   @Post("student/login")

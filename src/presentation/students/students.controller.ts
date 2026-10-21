@@ -1,4 +1,3 @@
-import { StudentsService } from "@app-application/students";
 import {
   ApiDataResponse,
   ApiResult,
@@ -11,6 +10,7 @@ import {
   StudentAuthGuard,
   StudentSearchItemDto,
 } from "@app-common";
+import { IStudentsService, STUDENTS_PORT } from "@app-contracts";
 import {
   ClassMember,
   PaginatedResult,
@@ -22,6 +22,7 @@ import {
   Body,
   Controller,
   Get,
+  Inject,
   Param,
   Patch,
   Query,
@@ -45,7 +46,7 @@ import { UpdateProfileDto } from "./dto";
 @ApiBearerAuth()
 @Controller("students")
 export class StudentsController {
-  constructor(private readonly students: StudentsService) {}
+  constructor(@Inject(STUDENTS_PORT) private readonly students: IStudentsService) {}
 
   /** Tìm sinh viên theo tên/mssv — GET /students?search= */
   @Get()

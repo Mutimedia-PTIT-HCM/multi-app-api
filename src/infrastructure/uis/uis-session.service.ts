@@ -1,9 +1,15 @@
 import { AppException, UIS_ERRORS, UisUnreachableError } from "@app-common";
-import { CredentialCipherService } from "@app-infra/crypto";
-import { PrismaService } from "@app-infra/prisma";
+import {
+  CREDENTIAL_CIPHER_PORT,
+  ICredentialCipher,
+  IUisService,
+  IUisSessionService,
+  PRISMA_PORT,
+  PrismaPort,
+  UIS_PORT,
+} from "@app-contracts";
 import { RefreshTokenRow, UisSession, UisTokenRow, UisTokens } from "@app-type";
-import { HttpStatus, Injectable } from "@nestjs/common";
-import { UisService } from "./uis.service";
+import { HttpStatus, Inject, Injectable } from "@nestjs/common";
 /**
  * Cấp UIS session (access token) cho 1 sinh viên:
  *  1. Access token còn hạn trong DB → dùng lại.
@@ -14,14 +20,14 @@ import { UisService } from "./uis.service";
  * single-use (rotate), nếu 2 request refresh cùng lúc sẽ làm mất session.
  */
 @Injectable()
-export class UisSessionService {
+export class UisSessionService implements IUisSessionService {
   /** Lock in-process: dedupe concurrent refresh cho cùng 1 mssv. */
   private readonly inflight = new Map<string, Promise<UisSession>>();
 
   constructor(
-    private readonly prisma: PrismaService,
-    private readonly uis: UisService,
-    private readonly cipher: CredentialCipherService,
+    @Inject(PRISMA_PORT) private readonly prisma: PrismaPort,
+    @Inject(UIS_PORT) private readonly uis: IUisService,
+    @Inject(CREDENTIAL_CIPHER_PORT) private readonly cipher: ICredentialCipher,
   ) {}
 
   async getSession(studentCode: string): Promise<UisSession> {

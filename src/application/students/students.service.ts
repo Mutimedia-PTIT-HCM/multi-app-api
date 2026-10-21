@@ -1,7 +1,13 @@
-import { AuthService } from "@app-application/auth";
 import { AppException, STUDENT_ERRORS, toPaginated, toPrismaPage } from "@app-common";
-import { PrismaService } from "@app-infra/prisma";
-import { StorageService } from "@app-infra/storage";
+import {
+  AUTH_PORT,
+  IAuthService,
+  IStorageService,
+  IStudentsService,
+  PRISMA_PORT,
+  PrismaPort,
+  STORAGE_PORT,
+} from "@app-contracts";
 import {
   ClassCodeRow,
   ClassMember,
@@ -13,15 +19,15 @@ import {
   StudentSearchRow,
   UploadedFilePayload,
 } from "@app-type";
-import { HttpStatus, Injectable } from "@nestjs/common";
+import { HttpStatus, Inject, Injectable } from "@nestjs/common";
 import type { Student } from "@prisma/client";
 
 @Injectable()
-export class StudentsService {
+export class StudentsService implements IStudentsService {
   constructor(
-    private readonly prisma: PrismaService,
-    private readonly storage: StorageService,
-    private readonly auth: AuthService,
+    @Inject(PRISMA_PORT) private readonly prisma: PrismaPort,
+    @Inject(STORAGE_PORT) private readonly storage: IStorageService,
+    @Inject(AUTH_PORT) private readonly auth: IAuthService,
   ) {}
 
   async getByCode(studentCode: string): Promise<PublicStudent> {

@@ -1,7 +1,7 @@
 import { ApiDataResponse, CurrentUser, rethrowError, SemesterPointDto, StudentAuthGuard } from "@app-common";
-import { UisService, UisSessionService } from "@app-infra/uis";
+import { IUisService, IUisSessionService, UIS_PORT, UIS_SESSION_PORT } from "@app-contracts";
 import { SemesterPoint } from "@app-type";
-import { Controller, Get, UseGuards } from "@nestjs/common";
+import { Controller, Get, Inject, UseGuards } from "@nestjs/common";
 import { ApiBearerAuth, ApiOperation, ApiTags } from "@nestjs/swagger";
 
 /** Điểm học tập — crawl trực tiếp UIS. */
@@ -11,8 +11,8 @@ import { ApiBearerAuth, ApiOperation, ApiTags } from "@nestjs/swagger";
 @UseGuards(StudentAuthGuard)
 export class AcademicPointsController {
   constructor(
-    private readonly uis: UisService,
-    private readonly session: UisSessionService,
+    @Inject(UIS_PORT) private readonly uis: IUisService,
+    @Inject(UIS_SESSION_PORT) private readonly session: IUisSessionService,
   ) {}
 
   @Get()

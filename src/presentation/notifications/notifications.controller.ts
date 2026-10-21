@@ -1,4 +1,3 @@
-import { NotificationsService } from "@app-application/notifications";
 import {
   ApiDataResponse,
   ApiResult,
@@ -9,11 +8,13 @@ import {
   rethrowError,
   StudentAuthGuard,
 } from "@app-common";
+import { INotificationsService, NOTIFICATIONS_PORT } from "@app-contracts";
 import { NotificationItem, PaginatedResult, UploadedFilePayload } from "@app-type";
 import {
   Body,
   Controller,
   Get,
+  Inject,
   Param,
   ParseIntPipe,
   Patch,
@@ -30,7 +31,7 @@ import { ApiBearerAuth, ApiBody, ApiConsumes, ApiOperation, ApiTags } from "@nes
 @ApiBearerAuth()
 @Controller("notifications")
 export class NotificationsController {
-  constructor(private readonly notifications: NotificationsService) {}
+  constructor(@Inject(NOTIFICATIONS_PORT) private readonly notifications: INotificationsService) {}
 
   /** Thông báo của mình. */
   @Get()

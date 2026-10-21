@@ -1,7 +1,13 @@
 import { AppException, MESSAGE_ERRORS, toPaginated, toPrismaPage } from "@app-common";
-import { PrismaService } from "@app-infra/prisma";
-import { PushService } from "@app-infra/push";
-import { StorageService } from "@app-infra/storage";
+import {
+  IMessagesService,
+  IPushService,
+  IStorageService,
+  PRISMA_PORT,
+  PrismaPort,
+  PUSH_PORT,
+  STORAGE_PORT,
+} from "@app-contracts";
 import {
   AvatarUserRow,
   ConversationItem,
@@ -11,15 +17,15 @@ import {
   PaginationQuery,
   StudentSearchRow,
 } from "@app-type";
-import { HttpStatus, Injectable } from "@nestjs/common";
+import { HttpStatus, Inject, Injectable } from "@nestjs/common";
 import type { Message } from "@prisma/client";
 
 @Injectable()
-export class MessagesService {
+export class MessagesService implements IMessagesService {
   constructor(
-    private readonly prisma: PrismaService,
-    private readonly push: PushService,
-    private readonly storage: StorageService,
+    @Inject(PRISMA_PORT) private readonly prisma: PrismaPort,
+    @Inject(PUSH_PORT) private readonly push: IPushService,
+    @Inject(STORAGE_PORT) private readonly storage: IStorageService,
   ) {}
 
   /** Lịch sử chat 2 chiều — page mới nhất trước, trong page vẫn asc để hiển thị. */

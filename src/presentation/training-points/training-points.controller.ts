@@ -1,4 +1,3 @@
-import { TrainingPointsService } from "@app-application/training-points";
 import {
   ApiDataResponse,
   ApiResult,
@@ -10,12 +9,14 @@ import {
   rethrowError,
   StudentAuthGuard,
 } from "@app-common";
+import { ITrainingPointsService, TRAINING_POINTS_PORT } from "@app-contracts";
 import { CertificatesResult, ClassMemberPoints, FormWithPoints, UploadedFilePayload } from "@app-type";
 import {
   Body,
   Controller,
   Delete,
   Get,
+  Inject,
   Param,
   ParseIntPipe,
   Post,
@@ -32,7 +33,11 @@ import { ReviewPointDto, SelfAssessDto, ToggleStatusDto } from "./dto";
 @ApiBearerAuth()
 @Controller("training-points")
 export class TrainingPointsController {
-  constructor(private readonly service: TrainingPointsService) {}
+  constructor(
+    @Inject(TRAINING_POINTS_PORT)
+    @Inject(TRAINING_POINTS_PORT)
+    private readonly service: ITrainingPointsService,
+  ) {}
 
   // ---------- Student ----------
 

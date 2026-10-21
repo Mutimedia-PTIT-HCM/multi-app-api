@@ -1,9 +1,8 @@
 import { TOKEN_REFRESH_QUEUE } from "@app-common";
-import { PrismaService } from "@app-infra/prisma";
-import { UisSessionService } from "@app-infra/uis";
+import { IUisSessionService, PRISMA_PORT, PrismaPort, UIS_SESSION_PORT } from "@app-contracts";
 import { StudentCodeRow } from "@app-type";
 import { InjectQueue, Processor, WorkerHost } from "@nestjs/bullmq";
-import { Logger, OnModuleInit } from "@nestjs/common";
+import { Inject, Logger, OnModuleInit } from "@nestjs/common";
 import { Job, Queue } from "bullmq";
 /**
  * Gia hạn phiên UIS định kỳ mỗi 5h:
@@ -21,8 +20,8 @@ export class TokenRefreshProcessor extends WorkerHost implements OnModuleInit {
   private readonly logger = new Logger(TokenRefreshProcessor.name);
 
   constructor(
-    private readonly prisma: PrismaService,
-    private readonly session: UisSessionService,
+    @Inject(PRISMA_PORT) private readonly prisma: PrismaPort,
+    @Inject(UIS_SESSION_PORT) private readonly session: IUisSessionService,
     @InjectQueue(TOKEN_REFRESH_QUEUE) private readonly queue: Queue,
   ) {
     super();

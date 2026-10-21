@@ -1,0 +1,1 @@
+export const SEMESTER_SYNC_PORT = Symbol("SEMESTER_SYNC_PORT");

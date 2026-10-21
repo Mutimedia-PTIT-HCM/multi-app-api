@@ -1,4 +1,5 @@
 import { AuthService } from "@app-application/auth";
+import { AUTH_PORT } from "@app-contracts";
 import { Module } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { JwtModule } from "@nestjs/jwt";
@@ -18,7 +19,7 @@ import { AuthController } from "./auth.controller";
     }),
   ],
   controllers: [AuthController],
-  providers: [AuthService],
-  exports: [AuthService],
+  providers: [{ provide: AUTH_PORT, useClass: AuthService }],
+  exports: [AUTH_PORT],
 })
 export class AuthModule {}

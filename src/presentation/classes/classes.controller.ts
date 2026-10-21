@@ -1,4 +1,3 @@
-import { ClassesService } from "@app-application/classes";
 import {
   ApiDataResponse,
   ApiResult,
@@ -9,7 +8,8 @@ import {
   JobIdDto,
   rethrowError,
 } from "@app-common";
-import { Body, Controller, HttpStatus, Put, UseGuards } from "@nestjs/common";
+import { CLASSES_PORT, IClassesService } from "@app-contracts";
+import { Body, Controller, HttpStatus, Inject, Put, UseGuards } from "@nestjs/common";
 import { ApiBearerAuth, ApiOperation, ApiTags } from "@nestjs/swagger";
 import { UpdateRoleDto } from "./dto";
 
@@ -18,7 +18,7 @@ import { UpdateRoleDto } from "./dto";
 @Controller("classes")
 @UseGuards(ChiefAuthGuard)
 export class ClassesController {
-  constructor(private readonly classes: ClassesService) {}
+  constructor(@Inject(CLASSES_PORT) private readonly classes: IClassesService) {}
 
   /** Đổi role của 1 SV: role 7 set tuỳ ý (<8); role 3 set trừ 7 (giữ rule legacy). */
   @Put("role")

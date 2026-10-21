@@ -1,6 +1,11 @@
 import { AppException, PRIVILEGED_ROLES, STUDENT_ERRORS, TRAINING_POINT_ERRORS } from "@app-common";
-import { PrismaService } from "@app-infra/prisma";
-import { StorageService } from "@app-infra/storage";
+import {
+  IStorageService,
+  ITrainingPointsService,
+  PRISMA_PORT,
+  PrismaPort,
+  STORAGE_PORT,
+} from "@app-contracts";
 import {
   CertImageKeysRow,
   CertificatesResult,
@@ -13,14 +18,14 @@ import {
   FormWithPointsRow,
   UploadedFilePayload,
 } from "@app-type";
-import { HttpStatus, Injectable } from "@nestjs/common";
+import { HttpStatus, Inject, Injectable } from "@nestjs/common";
 import type { Certificate, TrainingPoint, TrainingPointForm, TrainingPointStatus } from "@prisma/client";
 
 @Injectable()
-export class TrainingPointsService {
+export class TrainingPointsService implements ITrainingPointsService {
   constructor(
-    private readonly prisma: PrismaService,
-    private readonly storage: StorageService,
+    @Inject(PRISMA_PORT) private readonly prisma: PrismaPort,
+    @Inject(STORAGE_PORT) private readonly storage: IStorageService,
   ) {}
 
   // ===================== STUDENT =====================

@@ -1,4 +1,3 @@
-import { SystemService } from "@app-application/system";
 import {
   ApiDataResponse,
   AppException,
@@ -9,9 +8,16 @@ import {
   StudentAuthGuard,
   WeekScheduleDto,
 } from "@app-common";
-import { UisService, UisSessionService } from "@app-infra/uis";
+import {
+  ISystemService,
+  IUisService,
+  IUisSessionService,
+  SYSTEM_PORT,
+  UIS_PORT,
+  UIS_SESSION_PORT,
+} from "@app-contracts";
 import { SemesterWeeks, WeekSchedule } from "@app-type";
-import { Controller, Get, HttpStatus, Param, ParseIntPipe, Query, UseGuards } from "@nestjs/common";
+import { Controller, Get, HttpStatus, Inject, Param, ParseIntPipe, Query, UseGuards } from "@nestjs/common";
 import { ApiBearerAuth, ApiOperation, ApiQuery, ApiTags } from "@nestjs/swagger";
 
 @ApiTags("Schedule")
@@ -20,9 +26,9 @@ import { ApiBearerAuth, ApiOperation, ApiQuery, ApiTags } from "@nestjs/swagger"
 @UseGuards(StudentAuthGuard)
 export class ScheduleController {
   constructor(
-    private readonly uis: UisService,
-    private readonly session: UisSessionService,
-    private readonly system: SystemService,
+    @Inject(UIS_PORT) private readonly uis: IUisService,
+    @Inject(UIS_SESSION_PORT) private readonly session: IUisSessionService,
+    @Inject(SYSTEM_PORT) private readonly system: ISystemService,
   ) {}
 
   /** Số tuần của học kỳ hiện tại + tuần hiện tại — ?date=dd/mm/yyyy */

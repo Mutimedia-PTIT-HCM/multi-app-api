@@ -1,4 +1,3 @@
-import { MessagesService } from "@app-application/messages";
 import {
   ApiDataResponse,
   ApiResult,
@@ -9,8 +8,9 @@ import {
   rethrowError,
   StudentAuthGuard,
 } from "@app-common";
+import { IMessagesService, MESSAGES_PORT } from "@app-contracts";
 import { ConversationItem, MessageItem, PaginatedResult } from "@app-type";
-import { Controller, Delete, Get, Param, Query, UseGuards } from "@nestjs/common";
+import { Controller, Delete, Get, Inject, Param, Query, UseGuards } from "@nestjs/common";
 import { ApiBearerAuth, ApiOperation, ApiParam, ApiTags } from "@nestjs/swagger";
 
 @ApiTags("Messages")
@@ -18,7 +18,7 @@ import { ApiBearerAuth, ApiOperation, ApiParam, ApiTags } from "@nestjs/swagger"
 @Controller("messages")
 @UseGuards(StudentAuthGuard)
 export class MessagesController {
-  constructor(private readonly messages: MessagesService) {}
+  constructor(@Inject(MESSAGES_PORT) private readonly messages: IMessagesService) {}
 
   /** Danh sách hội thoại + tin nhắn cuối mỗi peer. */
   @Get("conversations")

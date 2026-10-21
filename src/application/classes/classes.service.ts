@@ -1,14 +1,14 @@
 import { AppException, CLASS_SYNC_QUEUE, STUDENT_ERRORS } from "@app-common";
-import { PrismaService } from "@app-infra/prisma";
+import { IClassesService, PRISMA_PORT, PrismaPort } from "@app-contracts";
 import { ClassCodeRow } from "@app-type";
 import { InjectQueue } from "@nestjs/bullmq";
-import { HttpStatus, Injectable } from "@nestjs/common";
+import { HttpStatus, Inject, Injectable } from "@nestjs/common";
 import type { Student } from "@prisma/client";
 import { Queue } from "bullmq";
 @Injectable()
-export class ClassesService {
+export class ClassesService implements IClassesService {
   constructor(
-    private readonly prisma: PrismaService,
+    @Inject(PRISMA_PORT) private readonly prisma: PrismaPort,
     @InjectQueue(CLASS_SYNC_QUEUE) private readonly queue: Queue,
   ) {}
 

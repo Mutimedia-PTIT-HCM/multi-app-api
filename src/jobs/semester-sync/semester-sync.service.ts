@@ -1,8 +1,16 @@
-import { SystemService } from "@app-application/system";
-import { PrismaService } from "@app-infra/prisma";
-import { UisService, UisSessionService } from "@app-infra/uis";
+import {
+  ISemesterSyncService,
+  ISystemService,
+  IUisService,
+  IUisSessionService,
+  PRISMA_PORT,
+  PrismaPort,
+  SYSTEM_PORT,
+  UIS_PORT,
+  UIS_SESSION_PORT,
+} from "@app-contracts";
 import { StudentCodeRow } from "@app-type";
-import { Injectable, Logger } from "@nestjs/common";
+import { Inject, Injectable, Logger } from "@nestjs/common";
 import { Cron } from "@nestjs/schedule";
 
 /**
@@ -10,14 +18,14 @@ import { Cron } from "@nestjs/schedule";
  * nếu hôm nay cách ngày bắt đầu HK sau < 10 ngày → chuyển `semesterCode` sang HK mới.
  */
 @Injectable()
-export class SemesterSyncService {
+export class SemesterSyncService implements ISemesterSyncService {
   private readonly logger = new Logger(SemesterSyncService.name);
 
   constructor(
-    private readonly prisma: PrismaService,
-    private readonly uis: UisService,
-    private readonly session: UisSessionService,
-    private readonly system: SystemService,
+    @Inject(PRISMA_PORT) private readonly prisma: PrismaPort,
+    @Inject(UIS_PORT) private readonly uis: IUisService,
+    @Inject(UIS_SESSION_PORT) private readonly session: IUisSessionService,
+    @Inject(SYSTEM_PORT) private readonly system: ISystemService,
   ) {}
 
   @Cron("0 0 * * *")

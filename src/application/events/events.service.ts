@@ -1,7 +1,13 @@
 import { AppException, EVENT_ERRORS, toPaginated, toPrismaPage } from "@app-common";
-import { PrismaService } from "@app-infra/prisma";
-import { PushService } from "@app-infra/push";
-import { StorageService } from "@app-infra/storage";
+import {
+  IEventsService,
+  IPushService,
+  IStorageService,
+  PRISMA_PORT,
+  PrismaPort,
+  PUSH_PORT,
+  STORAGE_PORT,
+} from "@app-contracts";
 import {
   AttendanceItem,
   CheckInWithStudentRow,
@@ -12,16 +18,16 @@ import {
   PaginationQuery,
   UploadedFilePayload,
 } from "@app-type";
-import { HttpStatus, Injectable } from "@nestjs/common";
+import { HttpStatus, Inject, Injectable } from "@nestjs/common";
 import type { Event, EventCheckIn } from "@prisma/client";
 import QRCode from "qrcode";
 
 @Injectable()
-export class EventsService {
+export class EventsService implements IEventsService {
   constructor(
-    private readonly prisma: PrismaService,
-    private readonly storage: StorageService,
-    private readonly push: PushService,
+    @Inject(PRISMA_PORT) private readonly prisma: PrismaPort,
+    @Inject(STORAGE_PORT) private readonly storage: IStorageService,
+    @Inject(PUSH_PORT) private readonly push: IPushService,
   ) {}
 
   async list(q: PaginationQuery): Promise<PaginatedResult<EventItem>> {

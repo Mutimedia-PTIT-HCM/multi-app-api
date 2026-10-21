@@ -31,6 +31,15 @@ legacy/                   # code Express cũ + multidb.sql — READ ONLY
 - File chung tài nguyên/cùng domain được group vào thư mục con (vd `app-type/uis/*`, `app-type/schedule/*`, `jobs/point-crawl/*`); thư mục con có `index.ts` riêng, index cha chỉ re-export subdir (`export * from "./uis"`).
 - Constant dùng chung toàn app đặt trong `common/` theo domain: `common/queues/` (tên BullMQ queue), `common/roles/` (role code) — KHÔNG để const cross-app rải trong service/processor. Constant chỉ dùng nội bộ 1 file giữ nguyên trong file đó.
 
+## Dependency injection qua interface (`src/contracts/`)
+
+- Layers chỉ giao tiếp qua interface: mọi service cross-layer có port interface + DI token trong `src/contracts/<domain>/` (`<name>.port.ts` + `<name>.token.ts`), export qua barrel, import bằng `@app-contracts`.
+- Consumer KHÔNG inject concrete class — dùng `@Inject(TOKEN) private readonly x: IXxxPort` trong constructor.
+- Module bind token → implementation: `providers: [{ provide: X_PORT, useClass: XService }]`, `exports: [X_PORT]` (export token, không export class).
+- Implementation class `implements` port interface của nó.
+- Ngoại lệ cho phép inject trực tiếp: framework services (`JwtService`, `ConfigService`, `Queue` của BullMQ) và class không ai inject bên ngoài (processor).
+- `PrismaPort = PrismaClient` — application/jobs nhìn DB qua port này, không biết `PrismaService`.
+
 ## Error handling
 
 - Mọi lỗi business throw `AppException(status, XXX_ERRORS.Y)` — KHÔNG throw `NotFoundException("...")` với message hardcode.

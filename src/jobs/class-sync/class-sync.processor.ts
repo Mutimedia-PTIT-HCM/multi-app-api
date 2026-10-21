@@ -1,9 +1,15 @@
 import { CLASS_SYNC_QUEUE } from "@app-common";
-import { PrismaService } from "@app-infra/prisma";
-import { UisService, UisSessionService } from "@app-infra/uis";
+import {
+  IUisService,
+  IUisSessionService,
+  PRISMA_PORT,
+  PrismaPort,
+  UIS_PORT,
+  UIS_SESSION_PORT,
+} from "@app-contracts";
 import { StudentCodeRow } from "@app-type";
 import { Processor, WorkerHost } from "@nestjs/bullmq";
-import { Logger } from "@nestjs/common";
+import { Inject, Logger } from "@nestjs/common";
 import { Job } from "bullmq";
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
@@ -17,9 +23,9 @@ export class ClassSyncProcessor extends WorkerHost {
   private readonly logger = new Logger(ClassSyncProcessor.name);
 
   constructor(
-    private readonly prisma: PrismaService,
-    private readonly uis: UisService,
-    private readonly session: UisSessionService,
+    @Inject(PRISMA_PORT) private readonly prisma: PrismaPort,
+    @Inject(UIS_PORT) private readonly uis: IUisService,
+    @Inject(UIS_SESSION_PORT) private readonly session: IUisSessionService,
   ) {
     super();
   }

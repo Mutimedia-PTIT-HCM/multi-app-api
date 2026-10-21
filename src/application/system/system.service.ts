@@ -1,11 +1,11 @@
 import { AppException, SYS_ERRORS } from "@app-common";
-import { PrismaService } from "@app-infra/prisma";
-import { HttpStatus, Injectable } from "@nestjs/common";
+import { ISystemService, PRISMA_PORT, PrismaPort } from "@app-contracts";
+import { HttpStatus, Inject, Injectable } from "@nestjs/common";
 import type { SystemConfig } from "@prisma/client";
 
 @Injectable()
-export class SystemService {
-  constructor(private readonly prisma: PrismaService) {}
+export class SystemService implements ISystemService {
+  constructor(@Inject(PRISMA_PORT) private readonly prisma: PrismaPort) {}
 
   /** Học kỳ hiện tại (nhhk), vd '20241'. */
   async getCurrentSemester(): Promise<string> {

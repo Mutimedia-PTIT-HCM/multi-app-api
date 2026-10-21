@@ -1,3 +1,4 @@
+import { IStorageService } from "@app-contracts";
 import { PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { Injectable, Logger } from "@nestjs/common";
@@ -17,7 +18,7 @@ import { extname, join } from "path";
  * Cloudflare R2: S3_ENDPOINT=https://<account>.r2.cloudflarestorage.com, S3_REGION=auto.
  */
 @Injectable()
-export class StorageService {
+export class StorageService implements IStorageService {
   private readonly logger = new Logger(StorageService.name);
   private readonly s3?: S3Client;
   private readonly s3Presign?: S3Client;

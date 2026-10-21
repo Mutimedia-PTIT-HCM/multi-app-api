@@ -1,7 +1,13 @@
 import { AppException, PRODUCT_ERRORS, toPaginated, toPrismaPage } from "@app-common";
-import { PrismaService } from "@app-infra/prisma";
-import { PushService } from "@app-infra/push";
-import { StorageService } from "@app-infra/storage";
+import {
+  IProductsService,
+  IPushService,
+  IStorageService,
+  PRISMA_PORT,
+  PrismaPort,
+  PUSH_PORT,
+  STORAGE_PORT,
+} from "@app-contracts";
 import {
   OrderItem,
   OrderWithBuyerProductRow,
@@ -16,15 +22,15 @@ import {
   ProductWithSellerRow,
   UploadedFilePayload,
 } from "@app-type";
-import { HttpStatus, Injectable } from "@nestjs/common";
+import { HttpStatus, Inject, Injectable } from "@nestjs/common";
 import type { Product } from "@prisma/client";
 
 @Injectable()
-export class ProductsService {
+export class ProductsService implements IProductsService {
   constructor(
-    private readonly prisma: PrismaService,
-    private readonly storage: StorageService,
-    private readonly push: PushService,
+    @Inject(PRISMA_PORT) private readonly prisma: PrismaPort,
+    @Inject(STORAGE_PORT) private readonly storage: IStorageService,
+    @Inject(PUSH_PORT) private readonly push: IPushService,
   ) {}
 
   async create(

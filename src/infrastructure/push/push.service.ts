@@ -1,3 +1,4 @@
+import { IPushService } from "@app-contracts";
 import { Injectable, Logger } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import admin from "firebase-admin";
@@ -9,7 +10,7 @@ import { resolve } from "path";
  * client subscribe topic = mssv / malop / 'all').
  */
 @Injectable()
-export class PushService {
+export class PushService implements IPushService {
   private readonly logger = new Logger(PushService.name);
   private readonly enabled: boolean;
 

@@ -1,4 +1,3 @@
-import { TeachersService } from "@app-application/teachers";
 import {
   ApiDataResponse,
   ApiResult,
@@ -8,8 +7,9 @@ import {
   StudentAuthGuard,
   TeacherDto,
 } from "@app-common";
+import { ITeachersService, TEACHERS_PORT } from "@app-contracts";
 import { PaginatedResult } from "@app-type";
-import { Body, Controller, Get, Param, Put, Query, UseGuards } from "@nestjs/common";
+import { Body, Controller, Get, Inject, Param, Put, Query, UseGuards } from "@nestjs/common";
 import { ApiBearerAuth, ApiOperation, ApiTags } from "@nestjs/swagger";
 import type { Teacher } from "@prisma/client";
 import { UpdateTeacherDto } from "./dto";
@@ -18,7 +18,7 @@ import { UpdateTeacherDto } from "./dto";
 @ApiBearerAuth()
 @Controller("teachers")
 export class TeachersController {
-  constructor(private readonly teachers: TeachersService) {}
+  constructor(@Inject(TEACHERS_PORT) private readonly teachers: ITeachersService) {}
 
   /** Danh bạ giảng viên. */
   @Get()

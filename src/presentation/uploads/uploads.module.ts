@@ -1,11 +1,10 @@
 import { UploadsService } from "@app-application/uploads";
-import { StorageModule } from "@app-infra/storage";
+import { UPLOADS_PORT } from "@app-contracts";
 import { Module } from "@nestjs/common";
 import { UploadsController } from "./uploads.controller";
 
 @Module({
-  imports: [StorageModule],
   controllers: [UploadsController],
-  providers: [UploadsService],
+  providers: [{ provide: UPLOADS_PORT, useClass: UploadsService }],
 })
 export class UploadsModule {}

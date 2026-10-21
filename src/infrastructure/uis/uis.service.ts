@@ -1,3 +1,4 @@
+import { IUisService } from "@app-contracts";
 import {
   RecentGpa,
   ScheduleDay,
@@ -25,7 +26,7 @@ const DAY_NAMES = ["", "", "Hai", "Ba", "Tư", "Năm", "Sáu", "Bảy"];
  * - Các API data (dkmh/sch/srm…) chỉ cần `Authorization: Bearer` — KHÔNG cần cookie XSRF.
  */
 @Injectable()
-export class UisService {
+export class UisService implements IUisService {
   private readonly logger = new Logger(UisService.name);
 
   // ===================== AUTH =====================

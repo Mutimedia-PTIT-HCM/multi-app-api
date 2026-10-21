@@ -1,20 +1,28 @@
 import { AppException, AUTH_ERRORS, NO_CHIEF_ROLES, STUDENT_ROLE, UIS_ERRORS } from "@app-common";
-import { PrismaService } from "@app-infra/prisma";
-import { StorageService } from "@app-infra/storage";
-import { UisService, UisSessionService } from "@app-infra/uis";
+import {
+  IAuthService,
+  IStorageService,
+  IUisService,
+  IUisSessionService,
+  PRISMA_PORT,
+  PrismaPort,
+  STORAGE_PORT,
+  UIS_PORT,
+  UIS_SESSION_PORT,
+} from "@app-contracts";
 import { ChiefLoginResult, PublicStudent, StudentLoginResult, TokenScope } from "@app-type";
-import { HttpStatus, Injectable } from "@nestjs/common";
+import { HttpStatus, Inject, Injectable } from "@nestjs/common";
 import { JwtService } from "@nestjs/jwt";
 import type { Student } from "@prisma/client";
 
 @Injectable()
-export class AuthService {
+export class AuthService implements IAuthService {
   constructor(
-    private readonly prisma: PrismaService,
-    private readonly uis: UisService,
-    private readonly storage: StorageService,
+    @Inject(PRISMA_PORT) private readonly prisma: PrismaPort,
+    @Inject(UIS_PORT) private readonly uis: IUisService,
+    @Inject(STORAGE_PORT) private readonly storage: IStorageService,
     private readonly jwt: JwtService,
-    private readonly uisSession: UisSessionService,
+    @Inject(UIS_SESSION_PORT) private readonly uisSession: IUisSessionService,
   ) {}
 
   async login(studentCodeRaw: string, password: string): Promise<StudentLoginResult> {

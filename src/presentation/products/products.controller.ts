@@ -1,4 +1,3 @@
-import { ProductsService } from "@app-application/products";
 import {
   ApiDataResponse,
   ApiResult,
@@ -9,12 +8,14 @@ import {
   rethrowError,
   StudentAuthGuard,
 } from "@app-common";
+import { IProductsService, PRODUCTS_PORT } from "@app-contracts";
 import { OrderItem, PaginatedResult, ProductItem, UploadedFilePayload } from "@app-type";
 import {
   Body,
   Controller,
   Delete,
   Get,
+  Inject,
   Param,
   Post,
   Query,
@@ -39,7 +40,7 @@ import { CreateOrderDto } from "./dto";
 @Controller()
 @UseGuards(StudentAuthGuard)
 export class ProductsController {
-  constructor(private readonly products: ProductsService) {}
+  constructor(@Inject(PRODUCTS_PORT) private readonly products: IProductsService) {}
 
   // ---------- Products ----------
 

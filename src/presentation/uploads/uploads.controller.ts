@@ -1,4 +1,3 @@
-import { UploadsService } from "@app-application/uploads";
 import {
   ApiDataResponse,
   ApiResult,
@@ -8,8 +7,9 @@ import {
   StudentAuthGuard,
   UploadedKeyDto,
 } from "@app-common";
+import { IUploadsService, UPLOADS_PORT } from "@app-contracts";
 import { PresignedUpload, UploadPurpose } from "@app-type";
-import { Body, Controller, HttpCode, Param, Post, Put, Req, UseGuards } from "@nestjs/common";
+import { Body, Controller, HttpCode, Inject, Param, Post, Put, Req, UseGuards } from "@nestjs/common";
 import { ApiBearerAuth, ApiBody, ApiOperation, ApiTags } from "@nestjs/swagger";
 import { Request } from "express";
 import { RequestUploadDto } from "./dto";
@@ -17,7 +17,7 @@ import { RequestUploadDto } from "./dto";
 @ApiTags("Uploads")
 @Controller("uploads")
 export class UploadsController {
-  constructor(private readonly uploads: UploadsService) {}
+  constructor(@Inject(UPLOADS_PORT) private readonly uploads: IUploadsService) {}
 
   /**
    * Bước 1: xin quyền upload → trả uploadUrl + key.

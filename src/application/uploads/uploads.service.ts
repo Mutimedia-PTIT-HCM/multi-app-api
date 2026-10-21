@@ -1,7 +1,7 @@
 import { AppException, UPLOAD_ERRORS } from "@app-common";
-import { StorageService } from "@app-infra/storage";
+import { IStorageService, IUploadsService, STORAGE_PORT } from "@app-contracts";
 import { PresignedUpload, UploadPurpose } from "@app-type";
-import { HttpStatus, Injectable } from "@nestjs/common";
+import { HttpStatus, Inject, Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { JwtService } from "@nestjs/jwt";
 
@@ -18,11 +18,11 @@ const PURPOSE_PREFIX: Record<UploadPurpose, string> = {
 const UPLOAD_SCOPE = "upload";
 
 @Injectable()
-export class UploadsService {
+export class UploadsService implements IUploadsService {
   private readonly apiBaseUrl: string;
 
   constructor(
-    private readonly storage: StorageService,
+    @Inject(STORAGE_PORT) private readonly storage: IStorageService,
     private readonly jwt: JwtService,
     config: ConfigService,
   ) {

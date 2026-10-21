@@ -9,6 +9,7 @@ import {
   CIPHER_TEXT_ENCODING,
   SYS_ERRORS,
 } from "@app-common";
+import { ICredentialCipher } from "@app-contracts";
 import { HttpStatus, Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { createCipheriv, createDecipheriv, randomBytes } from "crypto";
@@ -19,7 +20,7 @@ import { createCipheriv, createDecipheriv, randomBytes } from "crypto";
  * Format lưu: base64(iv).base64(tag).base64(ciphertext)
  */
 @Injectable()
-export class CredentialCipherService {
+export class CredentialCipherService implements ICredentialCipher {
   private readonly key: Buffer;
 
   constructor(config: ConfigService) {
