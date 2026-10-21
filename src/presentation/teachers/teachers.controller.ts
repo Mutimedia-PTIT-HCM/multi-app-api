@@ -1,5 +1,13 @@
 import { TeachersService } from "@app-application/teachers";
-import { ApiResult, ChiefAuthGuard, PaginationQueryDto, rethrowError, StudentAuthGuard } from "@app-common";
+import {
+  ApiDataResponse,
+  ApiResult,
+  ChiefAuthGuard,
+  PaginationQueryDto,
+  rethrowError,
+  StudentAuthGuard,
+  TeacherDto,
+} from "@app-common";
 import { PaginatedResult } from "@app-type";
 import { Body, Controller, Get, Param, Put, Query, UseGuards } from "@nestjs/common";
 import { ApiBearerAuth, ApiOperation, ApiTags } from "@nestjs/swagger";
@@ -16,6 +24,7 @@ export class TeachersController {
   @Get()
   @ApiOperation({ summary: "Danh bạ giảng viên — phân trang" })
   @UseGuards(StudentAuthGuard)
+  @ApiDataResponse({ type: TeacherDto, paginated: true })
   async list(@Query() q: PaginationQueryDto): Promise<ApiResult<PaginatedResult<Teacher>>> {
     try {
       return new ApiResult("Thành công", await this.teachers.list(q));
@@ -28,6 +37,7 @@ export class TeachersController {
   @Put(":teacherCode")
   @ApiOperation({ summary: "Sửa thông tin giảng viên (chief)" })
   @UseGuards(ChiefAuthGuard)
+  @ApiDataResponse()
   async update(
     @Param("teacherCode") teacherCode: string,
     @Body() dto: UpdateTeacherDto,

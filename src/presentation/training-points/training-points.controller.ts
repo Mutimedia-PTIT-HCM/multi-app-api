@@ -1,5 +1,15 @@
 import { TrainingPointsService } from "@app-application/training-points";
-import { ApiResult, ChiefAuthGuard, CurrentUser, rethrowError, StudentAuthGuard } from "@app-common";
+import {
+  ApiDataResponse,
+  ApiResult,
+  CertificatesResultDto,
+  ChiefAuthGuard,
+  ClassMemberPointsDto,
+  CurrentUser,
+  FormWithPointsDto,
+  rethrowError,
+  StudentAuthGuard,
+} from "@app-common";
 import { CertificatesResult, ClassMemberPoints, FormWithPoints, UploadedFilePayload } from "@app-type";
 import {
   Body,
@@ -30,6 +40,7 @@ export class TrainingPointsController {
   @Get("form")
   @ApiOperation({ summary: "Form tiêu chí + điểm của mình" })
   @UseGuards(StudentAuthGuard)
+  @ApiDataResponse({ type: FormWithPointsDto, isArray: true })
   async getForm(@CurrentUser("studentCode") code: string): Promise<ApiResult<FormWithPoints[]>> {
     try {
       return new ApiResult("Lấy điểm rèn luyện thành công", await this.service.getFormWithPoints(code));
@@ -42,6 +53,7 @@ export class TrainingPointsController {
   @Post("self")
   @ApiOperation({ summary: "SV tự chấm điểm 1 tiêu chí" })
   @UseGuards(StudentAuthGuard)
+  @ApiDataResponse()
   async selfAssess(
     @CurrentUser("studentCode") code: string,
     @Body() dto: SelfAssessDto,
@@ -70,6 +82,7 @@ export class TrainingPointsController {
   })
   @UseGuards(StudentAuthGuard)
   @UseInterceptors(FilesInterceptor("files", 10, { limits: { fileSize: 10 * 1024 * 1024 } }))
+  @ApiDataResponse()
   async uploadCert(
     @CurrentUser("studentCode") code: string,
     @Body("title") title: string,
@@ -87,6 +100,7 @@ export class TrainingPointsController {
   @Get("certificates")
   @ApiOperation({ summary: "Minh chứng của mình (sự kiện + cert upload)" })
   @UseGuards(StudentAuthGuard)
+  @ApiDataResponse({ type: CertificatesResultDto })
   async getCerts(@CurrentUser("studentCode") code: string): Promise<ApiResult<CertificatesResult>> {
     try {
       return new ApiResult("Lấy danh sách chứng nhận thành công", await this.service.getCertificates(code));
@@ -100,6 +114,7 @@ export class TrainingPointsController {
   @Get("status")
   @ApiOperation({ summary: "Trạng thái mở/khoá chấm điểm của lớp (chief)" })
   @UseGuards(ChiefAuthGuard)
+  @ApiDataResponse({ primitive: "boolean" })
   async getStatus(@CurrentUser("studentCode") code: string): Promise<ApiResult<boolean>> {
     try {
       return new ApiResult("Lấy trạng thái điểm rèn luyện thành công", await this.service.getStatus(code));
@@ -111,6 +126,7 @@ export class TrainingPointsController {
   @Post("status")
   @ApiOperation({ summary: "Mở/khoá chấm điểm cho lớp (chief)" })
   @UseGuards(ChiefAuthGuard)
+  @ApiDataResponse()
   async setStatus(
     @CurrentUser("studentCode") code: string,
     @Body() dto: ToggleStatusDto,
@@ -127,6 +143,7 @@ export class TrainingPointsController {
   @Get("class")
   @ApiOperation({ summary: "Điểm rèn luyện cả lớp (chief)" })
   @UseGuards(ChiefAuthGuard)
+  @ApiDataResponse({ type: ClassMemberPointsDto, isArray: true })
   async getClassPoints(@CurrentUser("studentCode") code: string): Promise<ApiResult<ClassMemberPoints[]>> {
     try {
       return new ApiResult("Lấy điểm rèn luyện lớp thành công", await this.service.getClassPoints(code));
@@ -140,6 +157,7 @@ export class TrainingPointsController {
   @ApiOperation({ summary: "Điểm 1 SV trong lớp (chief)" })
   @ApiParam({ name: "studentCode", example: "N18DCPT064" })
   @UseGuards(ChiefAuthGuard)
+  @ApiDataResponse({ type: FormWithPointsDto, isArray: true })
   async getStudentPoints(@Param("studentCode") studentCode: string): Promise<ApiResult<FormWithPoints[]>> {
     try {
       return new ApiResult(
@@ -155,6 +173,7 @@ export class TrainingPointsController {
   @Get("students/:studentCode/certificates")
   @ApiOperation({ summary: "Minh chứng của 1 SV trong lớp (chief)" })
   @UseGuards(ChiefAuthGuard)
+  @ApiDataResponse({ type: CertificatesResultDto })
   async getStudentCerts(@Param("studentCode") studentCode: string): Promise<ApiResult<CertificatesResult>> {
     try {
       return new ApiResult(
@@ -170,6 +189,7 @@ export class TrainingPointsController {
   @Post("review")
   @ApiOperation({ summary: "Chief chấm điểm cho SV" })
   @UseGuards(ChiefAuthGuard)
+  @ApiDataResponse()
   async review(
     @CurrentUser("studentCode") code: string,
     @Body() dto: ReviewPointDto,
@@ -185,6 +205,7 @@ export class TrainingPointsController {
   @Delete(":pointId")
   @ApiOperation({ summary: "Xoá 1 điểm (chief)" })
   @UseGuards(ChiefAuthGuard)
+  @ApiDataResponse()
   async deletePoint(
     @CurrentUser("studentCode") code: string,
     @Param("pointId", ParseIntPipe) pointId: number,
@@ -201,6 +222,7 @@ export class TrainingPointsController {
   @Post("reset")
   @ApiOperation({ summary: "Reset điểm + minh chứng cả lớp — role 3/4 (chief)" })
   @UseGuards(ChiefAuthGuard)
+  @ApiDataResponse()
   async reset(
     @CurrentUser("studentCode") code: string,
     @CurrentUser("role") role: number,

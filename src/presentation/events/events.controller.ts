@@ -1,8 +1,11 @@
 import { EventsService } from "@app-application/events";
 import {
+  ApiDataResponse,
   ApiResult,
+  AttendanceItemDto,
   ChiefAuthGuard,
   CurrentUser,
+  EventItemDto,
   PaginationQueryDto,
   rethrowError,
   StudentAuthGuard,
@@ -22,7 +25,7 @@ import {
   UseInterceptors,
 } from "@nestjs/common";
 import { FileInterceptor } from "@nestjs/platform-express";
-import { ApiBearerAuth, ApiBody, ApiConsumes, ApiOperation, ApiTags } from "@nestjs/swagger";
+import { ApiBearerAuth, ApiBody, ApiConsumes, ApiOperation, ApiResponse, ApiTags } from "@nestjs/swagger";
 import { Response } from "express";
 
 @ApiTags("Events")
@@ -37,6 +40,7 @@ export class EventsController {
   @Get()
   @ApiOperation({ summary: "Danh sách sự kiện — phân trang" })
   @UseGuards(StudentAuthGuard)
+  @ApiDataResponse({ type: EventItemDto, paginated: true })
   async list(@Query() q: PaginationQueryDto): Promise<ApiResult<PaginatedResult<EventItem>>> {
     try {
       return new ApiResult("Thành công", await this.events.list(q));
@@ -50,6 +54,7 @@ export class EventsController {
   @ApiOperation({ summary: "Check-in sự kiện" })
   @ApiBody({ schema: { type: "object", properties: { location: { type: "string", example: "PTIT HCM" } } } })
   @UseGuards(StudentAuthGuard)
+  @ApiDataResponse()
   async checkIn(
     @CurrentUser("studentCode") code: string,
     @Param("eventCode") eventCode: string,
@@ -82,6 +87,7 @@ export class EventsController {
   })
   @UseGuards(ChiefAuthGuard)
   @UseInterceptors(FileInterceptor("thumb", { limits: { fileSize: 10 * 1024 * 1024 } }))
+  @ApiDataResponse({ type: EventItemDto })
   async create(
     @CurrentUser("studentCode") code: string,
     @Body("title") title: string,
@@ -99,6 +105,7 @@ export class EventsController {
   @Delete(":eventCode")
   @ApiOperation({ summary: "Xoá sự kiện (chief)" })
   @UseGuards(ChiefAuthGuard)
+  @ApiDataResponse()
   async remove(
     @Param("eventCode") eventCode: string,
     @CurrentUser("studentCode") code: string,
@@ -116,6 +123,7 @@ export class EventsController {
   @Get(":eventCode/qr")
   @ApiOperation({ summary: "QR check-in PNG — stream trực tiếp (chief)" })
   @UseGuards(ChiefAuthGuard)
+  @ApiResponse({ status: 200, content: { "image/png": { schema: { type: "string", format: "binary" } } } })
   async qr(@Param("eventCode") eventCode: string, @Res() res: Response): Promise<void> {
     try {
       const png = await this.events.qrPng(eventCode);
@@ -128,6 +136,7 @@ export class EventsController {
   @Get(":eventCode/attendance")
   @ApiOperation({ summary: "Danh sách điểm danh sự kiện (chief)" })
   @UseGuards(ChiefAuthGuard)
+  @ApiDataResponse({ type: AttendanceItemDto, isArray: true })
   async attendance(@Param("eventCode") eventCode: string): Promise<ApiResult<AttendanceItem[]>> {
     try {
       return new ApiResult("Thành công", await this.events.attendance(eventCode));

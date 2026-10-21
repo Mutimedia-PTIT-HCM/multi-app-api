@@ -1,5 +1,13 @@
 import { UploadsService } from "@app-application/uploads";
-import { ApiResult, Public, rethrowError, StudentAuthGuard } from "@app-common";
+import {
+  ApiDataResponse,
+  ApiResult,
+  PresignedUploadDto,
+  Public,
+  rethrowError,
+  StudentAuthGuard,
+  UploadedKeyDto,
+} from "@app-common";
 import { PresignedUpload, UploadPurpose } from "@app-type";
 import { Body, Controller, HttpCode, Param, Post, Put, Req, UseGuards } from "@nestjs/common";
 import { ApiBearerAuth, ApiBody, ApiOperation, ApiTags } from "@nestjs/swagger";
@@ -21,6 +29,7 @@ export class UploadsController {
   @ApiBearerAuth()
   @HttpCode(200)
   @ApiOperation({ summary: "Xin quyền upload — trả presigned URL + key" })
+  @ApiDataResponse({ type: PresignedUploadDto })
   async presign(@Body() dto: RequestUploadDto): Promise<ApiResult<PresignedUpload>> {
     try {
       const data = await this.uploads.requestUpload(
@@ -43,6 +52,7 @@ export class UploadsController {
   @HttpCode(200)
   @ApiBody({ schema: { type: "string", format: "binary" } })
   @ApiOperation({ summary: "Upload binary (local dev only) — theo token từ presign" })
+  @ApiDataResponse({ type: UploadedKeyDto })
   async receiveLocal(
     @Param("token") token: string,
     @Req() req: Request,

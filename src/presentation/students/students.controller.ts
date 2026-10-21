@@ -1,11 +1,15 @@
 import { StudentsService } from "@app-application/students";
 import {
+  ApiDataResponse,
   ApiResult,
   ChiefAuthGuard,
+  ClassMemberDto,
   CurrentUser,
   PaginationQueryDto,
+  PublicStudentDto,
   rethrowError,
   StudentAuthGuard,
+  StudentSearchItemDto,
 } from "@app-common";
 import {
   ClassMember,
@@ -35,7 +39,7 @@ import {
   ApiQuery,
   ApiTags,
 } from "@nestjs/swagger";
-import { UpdateProfileDto } from "./dto/update-profile.dto";
+import { UpdateProfileDto } from "./dto";
 
 @ApiTags("Students")
 @ApiBearerAuth()
@@ -48,6 +52,7 @@ export class StudentsController {
   @ApiOperation({ summary: "Tìm sinh viên theo tên/mssv — phân trang" })
   @ApiQuery({ name: "search", required: false, description: "Tên hoặc MSSV" })
   @UseGuards(StudentAuthGuard)
+  @ApiDataResponse({ type: StudentSearchItemDto, paginated: true })
   async search(
     @Query("search") search: string,
     @CurrentUser("studentCode") code: string,
@@ -64,6 +69,7 @@ export class StudentsController {
   @Get("me")
   @ApiOperation({ summary: "Hồ sơ của chính mình" })
   @UseGuards(StudentAuthGuard)
+  @ApiDataResponse({ type: PublicStudentDto })
   async getMe(@CurrentUser("studentCode") code: string): Promise<ApiResult<PublicStudent>> {
     try {
       return new ApiResult("Lấy thông tin thành công", await this.students.getByCode(code));
@@ -77,6 +83,7 @@ export class StudentsController {
   @ApiOperation({ summary: "Thông tin public của 1 sinh viên" })
   @ApiParam({ name: "studentCode", example: "N18DCPT064" })
   @UseGuards(StudentAuthGuard)
+  @ApiDataResponse({ type: PublicStudentDto })
   async getOne(@Param("studentCode") studentCode: string): Promise<ApiResult<PublicStudent>> {
     try {
       return new ApiResult("Lấy thông tin sinh viên thành công", await this.students.getByCode(studentCode));
@@ -105,6 +112,7 @@ export class StudentsController {
   })
   @UseGuards(StudentAuthGuard)
   @UseInterceptors(FileInterceptor("avatar", { limits: { fileSize: 5 * 1024 * 1024 } }))
+  @ApiDataResponse()
   async updateProfile(
     @CurrentUser("studentCode") code: string,
     @Body() dto: UpdateProfileDto,
@@ -122,6 +130,7 @@ export class StudentsController {
   @Get("me/class-members")
   @ApiOperation({ summary: "Danh sách thành viên lớp mình (chief) — phân trang" })
   @UseGuards(ChiefAuthGuard)
+  @ApiDataResponse({ type: ClassMemberDto, paginated: true })
   async classMembers(
     @CurrentUser("studentCode") code: string,
     @Query() q: PaginationQueryDto,

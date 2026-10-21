@@ -1,5 +1,14 @@
 import { ProductsService } from "@app-application/products";
-import { ApiResult, CurrentUser, PaginationQueryDto, rethrowError, StudentAuthGuard } from "@app-common";
+import {
+  ApiDataResponse,
+  ApiResult,
+  CurrentUser,
+  OrderItemDto,
+  PaginationQueryDto,
+  ProductItemDto,
+  rethrowError,
+  StudentAuthGuard,
+} from "@app-common";
 import { OrderItem, PaginatedResult, ProductItem, UploadedFilePayload } from "@app-type";
 import {
   Body,
@@ -23,7 +32,7 @@ import {
   ApiQuery,
   ApiTags,
 } from "@nestjs/swagger";
-import { CreateOrderDto } from "./dto/create-order.dto";
+import { CreateOrderDto } from "./dto";
 
 @ApiTags("Products & Orders")
 @ApiBearerAuth()
@@ -52,6 +61,7 @@ export class ProductsController {
     },
   })
   @UseInterceptors(FilesInterceptor("files", 3, { limits: { fileSize: 10 * 1024 * 1024 } }))
+  @ApiDataResponse({ type: ProductItemDto })
   async create(
     @CurrentUser("studentCode") code: string,
     @Body() body: Record<string, string>,
@@ -83,6 +93,7 @@ export class ProductsController {
     description: "Lọc theo mã, phân cách bởi dấu phẩy",
     example: "123,456",
   })
+  @ApiDataResponse({ type: ProductItemDto, paginated: true })
   async list(
     @Query("codes") codes: string | undefined,
     @Query() q: PaginationQueryDto,
@@ -101,6 +112,7 @@ export class ProductsController {
   @Get("products/:productCode")
   @ApiOperation({ summary: "Chi tiết 1 ấn phẩm" })
   @ApiParam({ name: "productCode" })
+  @ApiDataResponse({ type: ProductItemDto })
   async getOne(@Param("productCode") productCode: string): Promise<ApiResult<ProductItem>> {
     try {
       return new ApiResult("Lấy ấn phẩm thành công", await this.products.getByCode(productCode));
@@ -115,6 +127,7 @@ export class ProductsController {
   @Post("orders")
   @ApiOperation({ summary: "Đặt hàng nhiều ấn phẩm cùng lúc" })
   @ApiBody({ type: [CreateOrderDto] })
+  @ApiDataResponse()
   async placeOrders(
     @CurrentUser("studentCode") code: string,
     @Body() items: CreateOrderDto[],
@@ -133,6 +146,7 @@ export class ProductsController {
   /** Đơn mình đã mua. */
   @Get("orders/mine")
   @ApiOperation({ summary: "Đơn mình đã mua — phân trang" })
+  @ApiDataResponse({ type: OrderItemDto, paginated: true })
   async myOrders(
     @CurrentUser("studentCode") code: string,
     @Query() q: PaginationQueryDto,
@@ -147,6 +161,7 @@ export class ProductsController {
   /** Đơn người khác mua ấn phẩm mình. */
   @Get("orders/received")
   @ApiOperation({ summary: "Đơn người khác mua ấn phẩm mình — phân trang" })
+  @ApiDataResponse({ type: OrderItemDto, paginated: true })
   async receivedOrders(
     @CurrentUser("studentCode") code: string,
     @Query() q: PaginationQueryDto,
@@ -160,6 +175,7 @@ export class ProductsController {
 
   @Delete("orders/:orderCode")
   @ApiOperation({ summary: "Huỷ đơn (buyer hoặc seller)" })
+  @ApiDataResponse()
   async cancel(
     @CurrentUser("studentCode") code: string,
     @Param("orderCode") orderCode: string,
@@ -174,6 +190,7 @@ export class ProductsController {
 
   @Post("orders/:orderCode/confirm")
   @ApiOperation({ summary: "Seller xác nhận đơn" })
+  @ApiDataResponse()
   async confirm(
     @CurrentUser("studentCode") code: string,
     @Param("orderCode") orderCode: string,
@@ -188,6 +205,7 @@ export class ProductsController {
 
   @Post("orders/:orderCode/done")
   @ApiOperation({ summary: "Seller hoàn thành đơn" })
+  @ApiDataResponse()
   async done(
     @CurrentUser("studentCode") code: string,
     @Param("orderCode") orderCode: string,

@@ -1,5 +1,12 @@
 import "reflect-metadata";
-import { AllExceptionsFilter, AppException, ResponseInterceptor, SYS_ERRORS } from "@app-common";
+import {
+  AllExceptionsFilter,
+  AppException,
+  ErrorResponseDto,
+  ResponseInterceptor,
+  registerErrorResponses,
+  SYS_ERRORS,
+} from "@app-common";
 import { HttpStatus, ValidationPipe } from "@nestjs/common";
 import { NestFactory } from "@nestjs/core";
 import { NestExpressApplication } from "@nestjs/platform-express";
@@ -44,7 +51,10 @@ async function bootstrap() {
     .setVersion("2.0")
     .addBearerAuth()
     .build();
-  const document = SwaggerModule.createDocument(app, swaggerConfig);
+  const document = SwaggerModule.createDocument(app, swaggerConfig, {
+    extraModels: [ErrorResponseDto],
+  });
+  registerErrorResponses(document);
   SwaggerModule.setup("api/docs", app, document);
 
   const port = Number(process.env.PORT ?? 3000);

@@ -8,3 +8,4 @@ export * from "./interceptors";
 export * from "./pagination";
 export * from "./queues";
 export * from "./roles";
+export * from "./swagger";

@@ -1,8 +1,10 @@
 import { NotificationsService } from "@app-application/notifications";
 import {
+  ApiDataResponse,
   ApiResult,
   ChiefAuthGuard,
   CurrentUser,
+  NotificationItemDto,
   PaginationQueryDto,
   rethrowError,
   StudentAuthGuard,
@@ -34,6 +36,7 @@ export class NotificationsController {
   @Get()
   @ApiOperation({ summary: "Thông báo gửi tới mình — phân trang" })
   @UseGuards(StudentAuthGuard)
+  @ApiDataResponse({ type: NotificationItemDto, paginated: true })
   async listMine(
     @CurrentUser("studentCode") code: string,
     @Query() q: PaginationQueryDto,
@@ -49,6 +52,7 @@ export class NotificationsController {
   @Patch("recipients/:recipientId/read")
   @ApiOperation({ summary: "Đánh dấu đã đọc" })
   @UseGuards(StudentAuthGuard)
+  @ApiDataResponse()
   async markRead(
     @CurrentUser("studentCode") code: string,
     @Param("recipientId", ParseIntPipe) recipientId: number,
@@ -82,6 +86,7 @@ export class NotificationsController {
   })
   @UseGuards(ChiefAuthGuard)
   @UseInterceptors(FilesInterceptor("files", 10, { limits: { fileSize: 20 * 1024 * 1024 } }))
+  @ApiDataResponse()
   async send(
     @CurrentUser("studentCode") code: string,
     @Body() body: Record<string, string>,

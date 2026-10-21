@@ -1,4 +1,4 @@
-import { CurrentUser, rethrowError, StudentAuthGuard } from "@app-common";
+import { ApiDataResponse, CurrentUser, rethrowError, SemesterPointDto, StudentAuthGuard } from "@app-common";
 import { UisService, UisSessionService } from "@app-infra/uis";
 import { SemesterPoint } from "@app-type";
 import { Controller, Get, UseGuards } from "@nestjs/common";
@@ -17,6 +17,7 @@ export class AcademicPointsController {
 
   @Get()
   @ApiOperation({ summary: "Điểm học tập toàn khoá — crawl trực tiếp UIS" })
+  @ApiDataResponse({ type: SemesterPointDto, isArray: true })
   async getPoints(@CurrentUser("studentCode") code: string): Promise<SemesterPoint[]> {
     try {
       const sess = await this.session.getSession(code);

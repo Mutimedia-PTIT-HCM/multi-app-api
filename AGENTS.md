@@ -101,3 +101,9 @@ Docs API: `http://localhost:3000/api/docs` (Swagger).
 - S3 mode: `uploadUrl` là presigned PUT URL SigV4 (15 phút). `S3_ENDPOINT` cho server nội bộ, `S3_PRESIGN_ENDPOINT`/`S3_PUBLIC_URL` trỏ host public — host nằm trong chữ ký nên KHÔNG đổi host sau khi ký.
 - Local mode: `uploadUrl` là `PUT /api/v1/uploads/local/:token` — token JWT ngắn hạn scope `"upload"`, endpoint public.
 - `purpose` quyết định prefix key: avatar→`avt`, product→`products`, notification→`notification`, event→`event/thumb`, cert→`cert`, misc→`misc`.
+
+## Swagger response docs
+
+- Mọi endpoint BẮT BUỘC có `@ApiDataResponse({type | isArray | paginated | primitive})` từ `@app-common` — envelope `{error,message,data}` tự wrap.
+- Response DTO classes nằm trong `common/swagger/dto/<domain>/` (tách khỏi `app-type` interface), 1 class/file, `@ApiProperty` mỗi field.
+- Error envelope `{error:true,code,message,data:null}` tự gắn vào mọi route qua `registerErrorResponses(document)` trong main.ts — không cần decorator tay.
