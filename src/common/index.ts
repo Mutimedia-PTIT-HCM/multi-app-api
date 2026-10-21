@@ -1,3 +1,4 @@
+export * from "./crypto";
 export * from "./decorators";
 export * from "./errors";
 export * from "./exceptions";
