@@ -1,19 +1,18 @@
-import { ApiResult, ChiefAuthGuard, rethrowError, StudentAuthGuard } from "@app-common";
-import { PrismaService } from "@app-infra/prisma";
-import { Body, Controller, Get, Param, Put, UseGuards } from "@nestjs/common";
+import { TeachersService } from "@app-application/teachers";
+import { ApiResult, ChiefAuthGuard, PaginationQueryDto, rethrowError, StudentAuthGuard } from "@app-common";
+import { Body, Controller, Get, Param, Put, Query, UseGuards } from "@nestjs/common";
 import { UpdateTeacherDto } from "./dto";
 
 @Controller("teachers")
 export class TeachersController {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly teachers: TeachersService) {}
 
   /** Danh bạ giảng viên. */
   @Get()
   @UseGuards(StudentAuthGuard)
-  async list() {
+  async list(@Query() q: PaginationQueryDto) {
     try {
-      const teachers = await this.prisma.teacher.findMany({ orderBy: { teacherCode: "asc" } });
-      return new ApiResult("Thành công", teachers);
+      return new ApiResult("Thành công", await this.teachers.list(q));
     } catch (e) {
       rethrowError(e);
     }
@@ -24,7 +23,7 @@ export class TeachersController {
   @UseGuards(ChiefAuthGuard)
   async update(@Param("teacherCode") teacherCode: string, @Body() dto: UpdateTeacherDto) {
     try {
-      await this.prisma.teacher.update({ where: { teacherCode }, data: dto });
+      await this.teachers.update(teacherCode, dto);
       return new ApiResult("Thành công", null);
     } catch (e) {
       rethrowError(e);

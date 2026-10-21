@@ -1,8 +1,8 @@
-import { AppException, EVENT_ERRORS } from "@app-common";
+import { AppException, EVENT_ERRORS, toPaginated, toPrismaPage } from "@app-common";
 import { PrismaService } from "@app-infra/prisma";
 import { PushService } from "@app-infra/push";
 import { StorageService } from "@app-infra/storage";
-import { UploadedFilePayload } from "@app-type";
+import { PaginationQuery, UploadedFilePayload } from "@app-type";
 import { HttpStatus, Injectable } from "@nestjs/common";
 import QRCode from "qrcode";
 
@@ -14,13 +14,20 @@ export class EventsService {
     private readonly push: PushService,
   ) {}
 
-  async list(limit?: number) {
-    const events = await this.prisma.event.findMany({
-      orderBy: { createdAt: "desc" },
-      take: limit,
-      include: { poster: { select: { fullName: true, avatarKey: true } } },
-    });
-    return events.map((e) => this.withUrls(e));
+  async list(q: PaginationQuery) {
+    const [total, events] = await Promise.all([
+      this.prisma.event.count(),
+      this.prisma.event.findMany({
+        orderBy: { createdAt: "desc" },
+        include: { poster: { select: { fullName: true, avatarKey: true } } },
+        ...toPrismaPage(q),
+      }),
+    ]);
+    return toPaginated(
+      events.map((e) => this.withUrls(e)),
+      total,
+      q,
+    );
   }
 
   async create(posterCode: string, title: string, content: string, thumb?: UploadedFilePayload) {

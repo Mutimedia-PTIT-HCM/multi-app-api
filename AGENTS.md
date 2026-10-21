@@ -37,6 +37,11 @@ legacy/                   # code Express cũ + multidb.sql — READ ONLY
 - Error entries định nghĩa sẵn trong `common/errors/<module>.errors.ts` dạng `{ code, message }` — code `PREFIX_NNN` (vd `AUTH_001`, `TP_002`), message tiếng Anh (client tự map ngôn ngữ hiển thị).
 - Envelope lỗi: `{ error: true, code, message, data: null }` — `AllExceptionsFilter` normalize; `HttpException` không có code → `HTTP_<status>`.
 - Controller wrap handler trong `try/catch` + `rethrowError(e)` (từ `@app-common`) — chuyển lỗi không phải HttpException (UisUnreachableError→503, còn lại→500). Service KHÔNG try/catch để nuốt lỗi.
+
+## Response & pagination
+
+- Envelope success: `{ error: false, message, data }` — `ResponseInterceptor` tự wrap; controller trả `ApiResult(message, data)` hoặc raw data (message mặc định "Thành công").
+- List endpoint BẮT BUỘC phân trang: nhận `@Query() q: PaginationQueryDto` (`?page=&limit=`, default 1/20, max 100); service dùng `toPrismaPage(q)` (skip/take) + `count` và trả `toPaginated(items, total, q)` → `data: { items, meta: { page, limit, total, totalPages } }`. KHÔNG trả mảng trần.
 - Thêm export mới → export qua `index.ts` của thư mục.
 - Import cùng thư mục (`./foo`, `./dto/foo`) giữ nguyên relative.
 - tsconfig `paths: {"@app-type": ["./src/app-type"], "@app-*": ["./src/*"]}`; sau `tsc`, `scripts/fix-dist-paths.js` rewrite `require("@app-...")` trong dist (đã gắn trong `npm run build`) — prefix `@app-` không trùng npm scoped packages.

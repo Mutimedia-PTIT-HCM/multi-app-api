@@ -1,6 +1,6 @@
 import { MessagesService } from "@app-application/messages";
-import { ApiResult, CurrentUser, rethrowError, StudentAuthGuard } from "@app-common";
-import { Controller, Delete, Get, Param, UseGuards } from "@nestjs/common";
+import { ApiResult, CurrentUser, PaginationQueryDto, rethrowError, StudentAuthGuard } from "@app-common";
+import { Controller, Delete, Get, Param, Query, UseGuards } from "@nestjs/common";
 
 @Controller("messages")
 @UseGuards(StudentAuthGuard)
@@ -19,11 +19,15 @@ export class MessagesController {
 
   /** Lịch sử chat với 1 người. */
   @Get(":peerCode")
-  async conversation(@CurrentUser("studentCode") code: string, @Param("peerCode") peer: string) {
+  async conversation(
+    @CurrentUser("studentCode") code: string,
+    @Param("peerCode") peer: string,
+    @Query() q: PaginationQueryDto,
+  ) {
     try {
       return new ApiResult(
         "Lấy tin nhắn thành công",
-        await this.messages.conversation(code, peer.toUpperCase()),
+        await this.messages.conversation(code, peer.toUpperCase(), q),
       );
     } catch (e) {
       rethrowError(e);

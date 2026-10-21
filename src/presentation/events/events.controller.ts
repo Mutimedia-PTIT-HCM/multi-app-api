@@ -1,5 +1,12 @@
 import { EventsService } from "@app-application/events";
-import { ApiResult, ChiefAuthGuard, CurrentUser, rethrowError, StudentAuthGuard } from "@app-common";
+import {
+  ApiResult,
+  ChiefAuthGuard,
+  CurrentUser,
+  PaginationQueryDto,
+  rethrowError,
+  StudentAuthGuard,
+} from "@app-common";
 import { UploadedFilePayload } from "@app-type";
 import {
   Body,
@@ -23,13 +30,12 @@ export class EventsController {
 
   // ---------- Student ----------
 
-  /** Danh sách sự kiện — ?limit=3 lấy 3 mới nhất. */
+  /** Danh sách sự kiện — ?page=&limit= (?limit=3 lấy 3 mới nhất). */
   @Get()
   @UseGuards(StudentAuthGuard)
-  async list(@Query("limit") limit?: string) {
+  async list(@Query() q: PaginationQueryDto) {
     try {
-      const n = limit ? parseInt(limit, 10) : undefined;
-      return new ApiResult("Thành công", await this.events.list(Number.isFinite(n) ? n : undefined));
+      return new ApiResult("Thành công", await this.events.list(q));
     } catch (e) {
       rethrowError(e);
     }

@@ -1,5 +1,12 @@
 import { StudentsService } from "@app-application/students";
-import { ApiResult, ChiefAuthGuard, CurrentUser, rethrowError, StudentAuthGuard } from "@app-common";
+import {
+  ApiResult,
+  ChiefAuthGuard,
+  CurrentUser,
+  PaginationQueryDto,
+  rethrowError,
+  StudentAuthGuard,
+} from "@app-common";
 import { UploadedFilePayload } from "@app-type";
 import {
   Body,
@@ -22,9 +29,13 @@ export class StudentsController {
   /** Tìm sinh viên theo tên/mssv — GET /students?search= */
   @Get()
   @UseGuards(StudentAuthGuard)
-  async search(@Query("search") search: string, @CurrentUser("studentCode") code: string) {
+  async search(
+    @Query("search") search: string,
+    @CurrentUser("studentCode") code: string,
+    @Query() q: PaginationQueryDto,
+  ) {
     try {
-      return new ApiResult("Thành công", await this.students.search(search ?? "", code));
+      return new ApiResult("Thành công", await this.students.search(search ?? "", code, q));
     } catch (e) {
       rethrowError(e);
     }
@@ -72,9 +83,9 @@ export class StudentsController {
   /** Danh sách thành viên lớp mình (chief). */
   @Get("me/class-members")
   @UseGuards(ChiefAuthGuard)
-  async classMembers(@CurrentUser("studentCode") code: string) {
+  async classMembers(@CurrentUser("studentCode") code: string, @Query() q: PaginationQueryDto) {
     try {
-      return new ApiResult("Lấy danh sách lớp thành công", await this.students.getClassMembers(code));
+      return new ApiResult("Lấy danh sách lớp thành công", await this.students.getClassMembers(code, q));
     } catch (e) {
       rethrowError(e);
     }

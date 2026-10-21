@@ -1,7 +1,8 @@
-import { AppException, MESSAGE_ERRORS } from "@app-common";
+import { AppException, MESSAGE_ERRORS, toPaginated, toPrismaPage } from "@app-common";
 import { PrismaService } from "@app-infra/prisma";
 import { PushService } from "@app-infra/push";
 import { StorageService } from "@app-infra/storage";
+import { PaginationQuery } from "@app-type";
 import { HttpStatus, Injectable } from "@nestjs/common";
 
 @Injectable()
@@ -12,22 +13,31 @@ export class MessagesService {
     private readonly storage: StorageService,
   ) {}
 
-  /** Lịch sử chat 2 chiều với 1 người. */
-  async conversation(selfCode: string, peerCode: string) {
-    const messages = await this.prisma.message.findMany({
-      where: {
-        OR: [
-          { senderCode: selfCode, receiverCode: peerCode },
-          { senderCode: peerCode, receiverCode: selfCode },
-        ],
-      },
-      orderBy: { sentAt: "asc" },
-      include: { sender: { select: { fullName: true, avatarKey: true } } },
-    });
-    return messages.map((m) => ({
-      ...m,
-      sender: { ...m.sender, avatarUrl: this.storage.url(m.sender.avatarKey) },
-    }));
+  /** Lịch sử chat 2 chiều — page mới nhất trước, trong page vẫn asc để hiển thị. */
+  async conversation(selfCode: string, peerCode: string, q: PaginationQuery) {
+    const where = {
+      OR: [
+        { senderCode: selfCode, receiverCode: peerCode },
+        { senderCode: peerCode, receiverCode: selfCode },
+      ],
+    };
+    const [total, messages] = await Promise.all([
+      this.prisma.message.count({ where }),
+      this.prisma.message.findMany({
+        where,
+        orderBy: { sentAt: "desc" },
+        include: { sender: { select: { fullName: true, avatarKey: true } } },
+        ...toPrismaPage(q),
+      }),
+    ]);
+    return toPaginated(
+      messages.reverse().map((m) => ({
+        ...m,
+        sender: { ...m.sender, avatarUrl: this.storage.url(m.sender.avatarKey) },
+      })),
+      total,
+      q,
+    );
   }
 
   /** Danh sách hội thoại: tin nhắn cuối mỗi peer. */

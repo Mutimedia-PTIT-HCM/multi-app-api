@@ -1,8 +1,8 @@
-import { AppException, NOTIFICATION_ERRORS, STUDENT_ERRORS } from "@app-common";
+import { AppException, NOTIFICATION_ERRORS, STUDENT_ERRORS, toPaginated, toPrismaPage } from "@app-common";
 import { PrismaService } from "@app-infra/prisma";
 import { PushService } from "@app-infra/push";
 import { StorageService } from "@app-infra/storage";
-import { SchedulePayload, UploadedFilePayload } from "@app-type";
+import { PaginationQuery, SchedulePayload, UploadedFilePayload } from "@app-type";
 import { HttpStatus, Injectable } from "@nestjs/common";
 
 @Injectable()
@@ -14,34 +14,42 @@ export class NotificationsService {
   ) {}
 
   /** Thông báo gửi tới mình (mới nhất trước). */
-  async listMine(studentCode: string) {
-    const rows = await this.prisma.notificationRecipient.findMany({
-      where: { studentCode },
-      orderBy: { notification: { sentAt: "desc" } },
-      include: {
-        notification: {
-          include: { poster: { select: { fullName: true, avatarKey: true } } },
+  async listMine(studentCode: string, q: PaginationQuery) {
+    const [total, rows] = await Promise.all([
+      this.prisma.notificationRecipient.count({ where: { studentCode } }),
+      this.prisma.notificationRecipient.findMany({
+        where: { studentCode },
+        orderBy: { notification: { sentAt: "desc" } },
+        include: {
+          notification: {
+            include: { poster: { select: { fullName: true, avatarKey: true } } },
+          },
         },
-      },
-    });
-    return rows.map((r) => ({
-      recipientId: r.id,
-      notificationCode: r.notificationCode,
-      seen: r.seen,
-      title: r.notification.title,
-      content: r.notification.content,
-      sentAt: r.notification.sentAt,
-      type: r.notification.type,
-      poster: {
-        studentCode: r.notification.posterCode,
-        fullName: r.notification.poster.fullName,
-        avatarUrl: this.storage.url(r.notification.poster.avatarKey),
-      },
-      attachments: this.storage.urls(r.notification.fileKeys).map((url, i) => ({
-        url,
-        name: r.notification.fileKeys?.split(" ").filter(Boolean)[i] ?? url,
+        ...toPrismaPage(q),
+      }),
+    ]);
+    return toPaginated(
+      rows.map((r) => ({
+        recipientId: r.id,
+        notificationCode: r.notificationCode,
+        seen: r.seen,
+        title: r.notification.title,
+        content: r.notification.content,
+        sentAt: r.notification.sentAt,
+        type: r.notification.type,
+        poster: {
+          studentCode: r.notification.posterCode,
+          fullName: r.notification.poster.fullName,
+          avatarUrl: this.storage.url(r.notification.poster.avatarKey),
+        },
+        attachments: this.storage.urls(r.notification.fileKeys).map((url, i) => ({
+          url,
+          name: r.notification.fileKeys?.split(" ").filter(Boolean)[i] ?? url,
+        })),
       })),
-    }));
+      total,
+      q,
+    );
   }
 
   async markRead(studentCode: string, recipientId: number) {

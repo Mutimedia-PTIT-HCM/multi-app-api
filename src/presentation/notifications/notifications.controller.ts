@@ -1,5 +1,12 @@
 import { NotificationsService } from "@app-application/notifications";
-import { ApiResult, ChiefAuthGuard, CurrentUser, rethrowError, StudentAuthGuard } from "@app-common";
+import {
+  ApiResult,
+  ChiefAuthGuard,
+  CurrentUser,
+  PaginationQueryDto,
+  rethrowError,
+  StudentAuthGuard,
+} from "@app-common";
 import { UploadedFilePayload } from "@app-type";
 import {
   Body,
@@ -9,6 +16,7 @@ import {
   ParseIntPipe,
   Patch,
   Post,
+  Query,
   UploadedFiles,
   UseGuards,
   UseInterceptors,
@@ -22,9 +30,9 @@ export class NotificationsController {
   /** Thông báo của mình. */
   @Get()
   @UseGuards(StudentAuthGuard)
-  async listMine(@CurrentUser("studentCode") code: string) {
+  async listMine(@CurrentUser("studentCode") code: string, @Query() q: PaginationQueryDto) {
     try {
-      return new ApiResult("Thành công", await this.notifications.listMine(code));
+      return new ApiResult("Thành công", await this.notifications.listMine(code, q));
     } catch (e) {
       rethrowError(e);
     }

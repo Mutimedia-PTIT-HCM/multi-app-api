@@ -1,8 +1,8 @@
-import { AppException, PRODUCT_ERRORS } from "@app-common";
+import { AppException, PRODUCT_ERRORS, toPaginated, toPrismaPage } from "@app-common";
 import { PrismaService } from "@app-infra/prisma";
 import { PushService } from "@app-infra/push";
 import { StorageService } from "@app-infra/storage";
-import { UploadedFilePayload } from "@app-type";
+import { PaginationQuery, UploadedFilePayload } from "@app-type";
 import { HttpStatus, Injectable } from "@nestjs/common";
 
 @Injectable()
@@ -38,13 +38,22 @@ export class ProductsService {
     return this.withUrls(product);
   }
 
-  async list(productCodes?: string[]) {
-    const products = await this.prisma.product.findMany({
-      where: productCodes ? { productCode: { in: productCodes } } : undefined,
-      orderBy: { createdAt: "desc" },
-      include: { seller: { select: { fullName: true } } },
-    });
-    return products.map((p) => this.withUrls(p));
+  async list(productCodes: string[] | undefined, q: PaginationQuery) {
+    const where = productCodes ? { productCode: { in: productCodes } } : {};
+    const [total, products] = await Promise.all([
+      this.prisma.product.count({ where }),
+      this.prisma.product.findMany({
+        where,
+        orderBy: { createdAt: "desc" },
+        include: { seller: { select: { fullName: true } } },
+        ...toPrismaPage(q),
+      }),
+    ]);
+    return toPaginated(
+      products.map((p) => this.withUrls(p)),
+      total,
+      q,
+    );
   }
 
   async getByCode(productCode: string) {
@@ -104,28 +113,45 @@ export class ProductsService {
   }
 
   /** Đơn mình đã mua. */
-  async myOrders(buyerCode: string) {
-    const orders = await this.prisma.order.findMany({
-      where: { buyerCode },
-      orderBy: { createdAt: "desc" },
-      include: {
-        product: { include: { seller: { select: { fullName: true } } } },
-      },
-    });
-    return orders.map((o) => this.orderWithUrls(o));
+  async myOrders(buyerCode: string, q: PaginationQuery) {
+    const [total, orders] = await Promise.all([
+      this.prisma.order.count({ where: { buyerCode } }),
+      this.prisma.order.findMany({
+        where: { buyerCode },
+        orderBy: { createdAt: "desc" },
+        include: {
+          product: { include: { seller: { select: { fullName: true } } } },
+        },
+        ...toPrismaPage(q),
+      }),
+    ]);
+    return toPaginated(
+      orders.map((o) => this.orderWithUrls(o)),
+      total,
+      q,
+    );
   }
 
   /** Đơn người khác đặt ấn phẩm mình. */
-  async receivedOrders(sellerCode: string) {
-    const orders = await this.prisma.order.findMany({
-      where: { product: { sellerCode } },
-      orderBy: { createdAt: "desc" },
-      include: {
-        buyer: { select: { fullName: true, phone: true } },
-        product: true,
-      },
-    });
-    return orders.map((o) => this.orderWithUrls(o));
+  async receivedOrders(sellerCode: string, q: PaginationQuery) {
+    const where = { product: { sellerCode } };
+    const [total, orders] = await Promise.all([
+      this.prisma.order.count({ where }),
+      this.prisma.order.findMany({
+        where,
+        orderBy: { createdAt: "desc" },
+        include: {
+          buyer: { select: { fullName: true, phone: true } },
+          product: true,
+        },
+        ...toPrismaPage(q),
+      }),
+    ]);
+    return toPaginated(
+      orders.map((o) => this.orderWithUrls(o)),
+      total,
+      q,
+    );
   }
 
   async cancel(orderCode: string, studentCode: string) {

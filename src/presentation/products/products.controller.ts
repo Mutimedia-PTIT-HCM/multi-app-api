@@ -1,5 +1,5 @@
 import { ProductsService } from "@app-application/products";
-import { ApiResult, CurrentUser, rethrowError, StudentAuthGuard } from "@app-common";
+import { ApiResult, CurrentUser, PaginationQueryDto, rethrowError, StudentAuthGuard } from "@app-common";
 import { UploadedFilePayload } from "@app-type";
 import {
   Body,
@@ -50,13 +50,13 @@ export class ProductsController {
 
   /** Danh sách ấn phẩm — ?codes=a,b,c lọc theo mã. */
   @Get("products")
-  async list(@Query("codes") codes?: string) {
+  async list(@Query("codes") codes: string | undefined, @Query() q: PaginationQueryDto) {
     try {
       const list = codes
         ?.split(",")
         .map((s) => s.trim())
         .filter(Boolean);
-      return new ApiResult("Lấy ấn phẩm thành công", await this.products.list(list));
+      return new ApiResult("Lấy ấn phẩm thành công", await this.products.list(list, q));
     } catch (e) {
       rethrowError(e);
     }
@@ -89,9 +89,9 @@ export class ProductsController {
 
   /** Đơn mình đã mua. */
   @Get("orders/mine")
-  async myOrders(@CurrentUser("studentCode") code: string) {
+  async myOrders(@CurrentUser("studentCode") code: string, @Query() q: PaginationQueryDto) {
     try {
-      return new ApiResult("Lấy đơn hàng thành công", await this.products.myOrders(code));
+      return new ApiResult("Lấy đơn hàng thành công", await this.products.myOrders(code, q));
     } catch (e) {
       rethrowError(e);
     }
@@ -99,9 +99,9 @@ export class ProductsController {
 
   /** Đơn người khác mua ấn phẩm mình. */
   @Get("orders/received")
-  async receivedOrders(@CurrentUser("studentCode") code: string) {
+  async receivedOrders(@CurrentUser("studentCode") code: string, @Query() q: PaginationQueryDto) {
     try {
-      return new ApiResult("Lấy đơn hàng thành công", await this.products.receivedOrders(code));
+      return new ApiResult("Lấy đơn hàng thành công", await this.products.receivedOrders(code, q));
     } catch (e) {
       rethrowError(e);
     }

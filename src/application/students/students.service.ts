@@ -1,8 +1,8 @@
 import { AuthService } from "@app-application/auth";
-import { AppException, STUDENT_ERRORS } from "@app-common";
+import { AppException, STUDENT_ERRORS, toPaginated, toPrismaPage } from "@app-common";
 import { PrismaService } from "@app-infra/prisma";
 import { StorageService } from "@app-infra/storage";
-import { UploadedFilePayload } from "@app-type";
+import { PaginationQuery, UploadedFilePayload } from "@app-type";
 import { HttpStatus, Injectable } from "@nestjs/common";
 
 @Injectable()
@@ -21,16 +21,25 @@ export class StudentsService {
     return this.auth.toPublicStudent(student);
   }
 
-  async search(keyword: string, excludeCode: string) {
-    const students = await this.prisma.student.findMany({
-      where: {
-        OR: [{ fullName: { contains: keyword } }, { studentCode: { contains: keyword.toUpperCase() } }],
-        NOT: { studentCode: excludeCode },
-      },
-      select: { studentCode: true, fullName: true, avatarKey: true },
-      take: 50,
-    });
-    return students.map((s) => ({ ...s, avatarUrl: this.storage.url(s.avatarKey) }));
+  async search(keyword: string, excludeCode: string, q: PaginationQuery) {
+    const where = {
+      OR: [{ fullName: { contains: keyword } }, { studentCode: { contains: keyword.toUpperCase() } }],
+      NOT: { studentCode: excludeCode },
+    };
+    const [total, students] = await Promise.all([
+      this.prisma.student.count({ where }),
+      this.prisma.student.findMany({
+        where,
+        select: { studentCode: true, fullName: true, avatarKey: true },
+        orderBy: { studentCode: "asc" },
+        ...toPrismaPage(q),
+      }),
+    ]);
+    return toPaginated(
+      students.map((s) => ({ ...s, avatarUrl: this.storage.url(s.avatarKey) })),
+      total,
+      q,
+    );
   }
 
   async updateProfile(
@@ -57,17 +66,32 @@ export class StudentsService {
   }
 
   /** Danh sách thành viên cùng lớp (dùng cho chief). */
-  async getClassMembers(studentCode: string) {
+  async getClassMembers(studentCode: string, q: PaginationQuery) {
     const me = await this.prisma.student.findUnique({
       where: { studentCode },
       select: { classCode: true },
     });
     if (!me) throw new AppException(HttpStatus.NOT_FOUND, STUDENT_ERRORS.NOT_FOUND);
-    const members = await this.prisma.student.findMany({
-      where: { classCode: me.classCode },
-      select: { studentCode: true, classCode: true, fullName: true, birthDate: true, avatarKey: true },
-      orderBy: { studentCode: "asc" },
-    });
-    return members.map((m) => ({ ...m, avatarUrl: this.storage.url(m.avatarKey) }));
+    const where = { classCode: me.classCode };
+    const [total, members] = await Promise.all([
+      this.prisma.student.count({ where }),
+      this.prisma.student.findMany({
+        where,
+        select: {
+          studentCode: true,
+          classCode: true,
+          fullName: true,
+          birthDate: true,
+          avatarKey: true,
+        },
+        orderBy: { studentCode: "asc" },
+        ...toPrismaPage(q),
+      }),
+    ]);
+    return toPaginated(
+      members.map((m) => ({ ...m, avatarUrl: this.storage.url(m.avatarKey) })),
+      total,
+      q,
+    );
   }
 }
