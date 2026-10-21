@@ -1,4 +1,4 @@
-import { TokenScope } from "./token-scope.type";
+import { TokenScope } from "../auth/token-scope.type";
 
 export interface JwtClaims {
   sub: string; // studentCode
