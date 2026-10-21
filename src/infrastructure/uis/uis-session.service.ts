@@ -1,10 +1,9 @@
+import { AppException, UIS_ERRORS, UisUnreachableError } from "@app-common";
 import { CredentialCipherService } from "@app-infra/crypto";
 import { PrismaService } from "@app-infra/prisma";
 import { UisSession, UisTokens } from "@app-type";
-import { Injectable, UnauthorizedException } from "@nestjs/common";
+import { HttpStatus, Injectable } from "@nestjs/common";
 import { UisService } from "./uis.service";
-
-import { UisUnreachableError } from "./uis-unreachable.error";
 /**
  * Cấp UIS session (access token) cho 1 sinh viên:
  *  1. Access token còn hạn trong DB → dùng lại.
@@ -34,7 +33,7 @@ export class UisSessionService {
         uisTokenExpiresAt: true,
       },
     });
-    if (!student) throw new UnauthorizedException("Không tìm thấy sinh viên");
+    if (!student) throw new AppException(HttpStatus.UNAUTHORIZED, UIS_ERRORS.SESSION_EXPIRED);
 
     // 1. Access token còn hạn (>5 phút) → dùng luôn
     if (
@@ -58,7 +57,7 @@ export class UisSessionService {
 
   private async acquireSession(studentCode: string, refreshToken: string | null): Promise<UisSession> {
     if (!refreshToken) {
-      throw new UnauthorizedException("Phiên UIS đã hết hạn — vui lòng đăng nhập lại ứng dụng");
+      throw new AppException(HttpStatus.UNAUTHORIZED, UIS_ERRORS.SESSION_EXPIRED);
     }
     const tokens = await this.uis.refresh(studentCode, this.cipher.decrypt(refreshToken));
     if (tokens === "unreachable") throw new UisUnreachableError("UIS unreachable");
@@ -68,7 +67,7 @@ export class UisSessionService {
         where: { studentCode },
         data: { uisRefreshToken: null, uisAccessToken: null, uisTokenExpiresAt: null },
       });
-      throw new UnauthorizedException("Phiên UIS đã hết hạn — vui lòng đăng nhập lại ứng dụng");
+      throw new AppException(HttpStatus.UNAUTHORIZED, UIS_ERRORS.SESSION_EXPIRED);
     }
     await this.persistTokens(studentCode, tokens);
     return { accessToken: tokens.accessToken };

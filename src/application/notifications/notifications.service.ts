@@ -1,8 +1,9 @@
+import { AppException, NOTIFICATION_ERRORS, STUDENT_ERRORS } from "@app-common";
 import { PrismaService } from "@app-infra/prisma";
 import { PushService } from "@app-infra/push";
 import { StorageService } from "@app-infra/storage";
 import { SchedulePayload, UploadedFilePayload } from "@app-type";
-import { Injectable, NotFoundException } from "@nestjs/common";
+import { HttpStatus, Injectable } from "@nestjs/common";
 
 @Injectable()
 export class NotificationsService {
@@ -46,7 +47,7 @@ export class NotificationsService {
   async markRead(studentCode: string, recipientId: number) {
     const row = await this.prisma.notificationRecipient.findUnique({ where: { id: recipientId } });
     if (!row || row.studentCode !== studentCode) {
-      throw new NotFoundException("Không tìm thấy thông báo");
+      throw new AppException(HttpStatus.NOT_FOUND, NOTIFICATION_ERRORS.NOT_FOUND);
     }
     await this.prisma.notificationRecipient.update({
       where: { id: recipientId },
@@ -64,7 +65,7 @@ export class NotificationsService {
       where: { studentCode: posterCode },
       select: { classCode: true },
     });
-    if (!poster) throw new NotFoundException("Không tìm thấy sinh viên");
+    if (!poster) throw new AppException(HttpStatus.NOT_FOUND, STUDENT_ERRORS.NOT_FOUND);
     const classCode = poster.classCode;
 
     const keys: string[] = [];

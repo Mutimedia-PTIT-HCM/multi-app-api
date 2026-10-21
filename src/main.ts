@@ -1,6 +1,6 @@
 import "reflect-metadata";
-import { AllExceptionsFilter, ResponseInterceptor } from "@app-common";
-import { ValidationPipe } from "@nestjs/common";
+import { AllExceptionsFilter, AppException, ResponseInterceptor, SYS_ERRORS } from "@app-common";
+import { HttpStatus, ValidationPipe } from "@nestjs/common";
 import { NestFactory } from "@nestjs/core";
 import { NestExpressApplication } from "@nestjs/platform-express";
 import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
@@ -31,6 +31,7 @@ async function bootstrap() {
       whitelist: true,
       transform: true,
       transformOptions: { enableImplicitConversion: true },
+      exceptionFactory: () => new AppException(HttpStatus.BAD_REQUEST, SYS_ERRORS.VALIDATION_FAILED),
     }),
   );
   app.useGlobalInterceptors(new ResponseInterceptor());

@@ -1,8 +1,9 @@
+import { AppException, EVENT_ERRORS } from "@app-common";
 import { PrismaService } from "@app-infra/prisma";
 import { PushService } from "@app-infra/push";
 import { StorageService } from "@app-infra/storage";
 import { UploadedFilePayload } from "@app-type";
-import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from "@nestjs/common";
+import { HttpStatus, Injectable } from "@nestjs/common";
 import QRCode from "qrcode";
 
 @Injectable()
@@ -23,7 +24,7 @@ export class EventsService {
   }
 
   async create(posterCode: string, title: string, content: string, thumb?: UploadedFilePayload) {
-    if (!thumb) throw new BadRequestException("Sự kiện gửi lên không có Poster");
+    if (!thumb) throw new AppException(HttpStatus.BAD_REQUEST, EVENT_ERRORS.MISSING_POSTER);
     const thumbnailKey = this.storage.generateKey("event/thumb", thumb.originalname);
     await this.storage.upload(thumbnailKey, thumb.buffer, thumb.mimetype);
     const event = await this.prisma.event.create({
@@ -42,9 +43,9 @@ export class EventsService {
 
   async remove(eventCode: string, actorCode: string, actorRole: number) {
     const event = await this.prisma.event.findUnique({ where: { eventCode } });
-    if (!event) throw new NotFoundException("Không tìm thấy sự kiện");
+    if (!event) throw new AppException(HttpStatus.NOT_FOUND, EVENT_ERRORS.NOT_FOUND);
     if (event.posterCode !== actorCode && actorRole !== 7) {
-      throw new ForbiddenException("Không có quyền xoá sự kiện này");
+      throw new AppException(HttpStatus.FORBIDDEN, EVENT_ERRORS.DELETE_FORBIDDEN);
     }
     await this.prisma.event.delete({ where: { eventCode } });
     if (event.thumbnailKey) await this.storage.delete(event.thumbnailKey).catch(() => undefined);
@@ -56,7 +57,7 @@ export class EventsService {
       where: { eventCode },
       select: { eventCode: true, eventTime: true, posterCode: true },
     });
-    if (!event) throw new NotFoundException("Không tìm thấy sự kiện");
+    if (!event) throw new AppException(HttpStatus.NOT_FOUND, EVENT_ERRORS.NOT_FOUND);
     return QRCode.toBuffer(JSON.stringify(event), { width: 700 });
   }
 
@@ -66,7 +67,7 @@ export class EventsService {
       include: { student: { select: { studentCode: true, fullName: true, avatarKey: true } } },
       orderBy: { checkInAt: "asc" },
     });
-    if (checkIns.length === 0) throw new NotFoundException("Không tìm thấy sự kiện này");
+    if (checkIns.length === 0) throw new AppException(HttpStatus.NOT_FOUND, EVENT_ERRORS.NOT_FOUND);
     return checkIns.map((c) => ({
       ...c,
       student: { ...c.student, avatarUrl: this.storage.url(c.student.avatarKey) },
@@ -75,11 +76,11 @@ export class EventsService {
 
   async checkIn(studentCode: string, eventCode: string, location?: string) {
     const event = await this.prisma.event.findUnique({ where: { eventCode } });
-    if (!event) throw new NotFoundException("Không tìm thấy sự kiện này");
+    if (!event) throw new AppException(HttpStatus.NOT_FOUND, EVENT_ERRORS.NOT_FOUND);
     const exists = await this.prisma.eventCheckIn.findUnique({
       where: { eventCode_studentCode: { eventCode, studentCode } },
     });
-    if (exists) throw new BadRequestException("Bạn đã checkin sự kiện này rồi.");
+    if (exists) throw new AppException(HttpStatus.BAD_REQUEST, EVENT_ERRORS.ALREADY_CHECKED_IN);
     await this.prisma.eventCheckIn.create({ data: { eventCode, studentCode, location } });
   }
 

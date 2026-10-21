@@ -1,8 +1,9 @@
+import { AppException, PRODUCT_ERRORS } from "@app-common";
 import { PrismaService } from "@app-infra/prisma";
 import { PushService } from "@app-infra/push";
 import { StorageService } from "@app-infra/storage";
 import { UploadedFilePayload } from "@app-type";
-import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from "@nestjs/common";
+import { HttpStatus, Injectable } from "@nestjs/common";
 
 @Injectable()
 export class ProductsService {
@@ -51,12 +52,12 @@ export class ProductsService {
       where: { productCode },
       include: { seller: { select: { fullName: true, avatarKey: true } } },
     });
-    if (!product) throw new NotFoundException("Không tìm thấy ấn phẩm này");
+    if (!product) throw new AppException(HttpStatus.NOT_FOUND, PRODUCT_ERRORS.NOT_FOUND);
     return this.withUrls(product);
   }
 
   async placeOrders(buyerCode: string, items: { productCode: string; quantity: number; note: string }[]) {
-    if (items.length === 0) throw new BadRequestException("Đơn hàng trống");
+    if (items.length === 0) throw new AppException(HttpStatus.BAD_REQUEST, PRODUCT_ERRORS.EMPTY_ORDER);
     const products = await this.prisma.product.findMany({
       where: { productCode: { in: items.map((i) => i.productCode) } },
       select: { productCode: true, sellerCode: true },
@@ -64,9 +65,15 @@ export class ProductsService {
     const productMap = new Map(products.map((p) => [p.productCode, p]));
     for (const item of items) {
       const product = productMap.get(item.productCode);
-      if (!product) throw new BadRequestException(`Ấn phẩm ${item.productCode} không tồn tại`);
+      if (!product) {
+        throw new AppException(
+          HttpStatus.BAD_REQUEST,
+          PRODUCT_ERRORS.NOT_FOUND,
+          `Product ${item.productCode} not found`,
+        );
+      }
       if (product.sellerCode === buyerCode) {
-        throw new BadRequestException("Không thể đặt mua ấn phẩm của chính mình");
+        throw new AppException(HttpStatus.BAD_REQUEST, PRODUCT_ERRORS.CANNOT_BUY_OWN);
       }
     }
     const base = Date.now();
@@ -125,7 +132,7 @@ export class ProductsService {
     const order = await this.getOrderOr404(orderCode);
     const isBuyer = order.buyerCode === studentCode;
     const isSeller = order.product.sellerCode === studentCode;
-    if (!isBuyer && !isSeller) throw new ForbiddenException("Không có quyền huỷ đơn này");
+    if (!isBuyer && !isSeller) throw new AppException(HttpStatus.FORBIDDEN, PRODUCT_ERRORS.ORDER_FORBIDDEN);
     await this.prisma.order.delete({ where: { orderCode } });
   }
 
@@ -146,14 +153,14 @@ export class ProductsService {
       where: { orderCode },
       include: { product: true },
     });
-    if (!order) throw new NotFoundException("Không tìm thấy đơn hàng này");
+    if (!order) throw new AppException(HttpStatus.NOT_FOUND, PRODUCT_ERRORS.ORDER_NOT_FOUND);
     return order;
   }
 
   private async assertSeller(orderCode: string, studentCode: string) {
     const order = await this.getOrderOr404(orderCode);
     if (order.product.sellerCode !== studentCode) {
-      throw new ForbiddenException("Không có quyền với đơn hàng này");
+      throw new AppException(HttpStatus.FORBIDDEN, PRODUCT_ERRORS.ORDER_FORBIDDEN);
     }
   }
 

@@ -1,7 +1,8 @@
+import { AppException, MESSAGE_ERRORS } from "@app-common";
 import { PrismaService } from "@app-infra/prisma";
 import { PushService } from "@app-infra/push";
 import { StorageService } from "@app-infra/storage";
-import { ForbiddenException, Injectable, NotFoundException } from "@nestjs/common";
+import { HttpStatus, Injectable } from "@nestjs/common";
 
 @Injectable()
 export class MessagesService {
@@ -84,9 +85,9 @@ export class MessagesService {
 
   async remove(studentCode: string, messageCode: string) {
     const message = await this.prisma.message.findUnique({ where: { messageCode } });
-    if (!message) throw new NotFoundException("Không tìm thấy tin nhắn");
+    if (!message) throw new AppException(HttpStatus.NOT_FOUND, MESSAGE_ERRORS.NOT_FOUND);
     if (message.senderCode !== studentCode && message.receiverCode !== studentCode) {
-      throw new ForbiddenException("Không có quyền xoá tin nhắn này");
+      throw new AppException(HttpStatus.FORBIDDEN, MESSAGE_ERRORS.DELETE_FORBIDDEN);
     }
     await this.prisma.message.delete({ where: { messageCode } });
   }

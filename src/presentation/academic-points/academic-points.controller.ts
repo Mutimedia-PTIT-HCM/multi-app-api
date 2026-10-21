@@ -1,4 +1,4 @@
-import { CurrentUser, StudentAuthGuard } from "@app-common";
+import { CurrentUser, rethrowError, StudentAuthGuard } from "@app-common";
 import { UisService, UisSessionService } from "@app-infra/uis";
 import { Controller, Get, UseGuards } from "@nestjs/common";
 
@@ -13,7 +13,11 @@ export class AcademicPointsController {
 
   @Get()
   async getPoints(@CurrentUser("studentCode") code: string) {
-    const sess = await this.session.getSession(code);
-    return this.uis.getAllPoints(sess);
+    try {
+      const sess = await this.session.getSession(code);
+      return this.uis.getAllPoints(sess);
+    } catch (e) {
+      rethrowError(e);
+    }
   }
 }

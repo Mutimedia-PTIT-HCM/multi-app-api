@@ -1,5 +1,5 @@
 import { SystemService } from "@app-application/system";
-import { ChiefAuthGuard, StudentAuthGuard } from "@app-common";
+import { ChiefAuthGuard, rethrowError, StudentAuthGuard } from "@app-common";
 import { Controller, Get, UseGuards } from "@nestjs/common";
 
 @Controller("system")
@@ -9,12 +9,20 @@ export class SystemController {
   @Get("semester")
   @UseGuards(StudentAuthGuard)
   async getSemester() {
-    return { semesterCode: await this.system.getCurrentSemester() };
+    try {
+      return { semesterCode: await this.system.getCurrentSemester() };
+    } catch (e) {
+      rethrowError(e);
+    }
   }
 
   @Get("semester/chief")
   @UseGuards(ChiefAuthGuard)
   async getSemesterChief() {
-    return { semesterCode: await this.system.getCurrentSemester() };
+    try {
+      return { semesterCode: await this.system.getCurrentSemester() };
+    } catch (e) {
+      rethrowError(e);
+    }
   }
 }

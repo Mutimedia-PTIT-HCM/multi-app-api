@@ -1,8 +1,9 @@
 import { AuthService } from "@app-application/auth";
+import { AppException, STUDENT_ERRORS } from "@app-common";
 import { PrismaService } from "@app-infra/prisma";
 import { StorageService } from "@app-infra/storage";
 import { UploadedFilePayload } from "@app-type";
-import { Injectable, NotFoundException } from "@nestjs/common";
+import { HttpStatus, Injectable } from "@nestjs/common";
 
 @Injectable()
 export class StudentsService {
@@ -16,7 +17,7 @@ export class StudentsService {
     const student = await this.prisma.student.findUnique({
       where: { studentCode: studentCode.toUpperCase() },
     });
-    if (!student) throw new NotFoundException("Không tìm thấy sinh viên này");
+    if (!student) throw new AppException(HttpStatus.NOT_FOUND, STUDENT_ERRORS.NOT_FOUND);
     return this.auth.toPublicStudent(student);
   }
 
@@ -61,7 +62,7 @@ export class StudentsService {
       where: { studentCode },
       select: { classCode: true },
     });
-    if (!me) throw new NotFoundException("Không tìm thấy sinh viên");
+    if (!me) throw new AppException(HttpStatus.NOT_FOUND, STUDENT_ERRORS.NOT_FOUND);
     const members = await this.prisma.student.findMany({
       where: { classCode: me.classCode },
       select: { studentCode: true, classCode: true, fullName: true, birthDate: true, avatarKey: true },

@@ -1,7 +1,7 @@
-import { CLASS_SYNC_QUEUE } from "@app-common";
+import { AppException, CLASS_SYNC_QUEUE, STUDENT_ERRORS } from "@app-common";
 import { PrismaService } from "@app-infra/prisma";
 import { InjectQueue } from "@nestjs/bullmq";
-import { Injectable, NotFoundException } from "@nestjs/common";
+import { HttpStatus, Injectable } from "@nestjs/common";
 import { Queue } from "bullmq";
 @Injectable()
 export class ClassesService {
@@ -12,7 +12,7 @@ export class ClassesService {
 
   async updateRole(studentCode: string, role: number) {
     const student = await this.prisma.student.findUnique({ where: { studentCode } });
-    if (!student) throw new NotFoundException("Không tìm thấy sinh viên");
+    if (!student) throw new AppException(HttpStatus.NOT_FOUND, STUDENT_ERRORS.NOT_FOUND);
     await this.prisma.student.update({ where: { studentCode }, data: { role } });
   }
 
@@ -22,7 +22,7 @@ export class ClassesService {
       where: { studentCode },
       select: { classCode: true },
     });
-    if (!me) throw new NotFoundException("Không tìm thấy sinh viên");
+    if (!me) throw new AppException(HttpStatus.NOT_FOUND, STUDENT_ERRORS.NOT_FOUND);
     const job = await this.queue.add("sync-class", { classCode: me.classCode });
     return String(job.id);
   }

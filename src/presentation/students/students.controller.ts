@@ -1,5 +1,5 @@
 import { StudentsService } from "@app-application/students";
-import { ApiResult, ChiefAuthGuard, CurrentUser, StudentAuthGuard } from "@app-common";
+import { ApiResult, ChiefAuthGuard, CurrentUser, rethrowError, StudentAuthGuard } from "@app-common";
 import { UploadedFilePayload } from "@app-type";
 import {
   Body,
@@ -23,21 +23,33 @@ export class StudentsController {
   @Get()
   @UseGuards(StudentAuthGuard)
   async search(@Query("search") search: string, @CurrentUser("studentCode") code: string) {
-    return new ApiResult("Thành công", await this.students.search(search ?? "", code));
+    try {
+      return new ApiResult("Thành công", await this.students.search(search ?? "", code));
+    } catch (e) {
+      rethrowError(e);
+    }
   }
 
   /** Hồ sơ của chính mình. */
   @Get("me")
   @UseGuards(StudentAuthGuard)
   async getMe(@CurrentUser("studentCode") code: string) {
-    return new ApiResult("Lấy thông tin thành công", await this.students.getByCode(code));
+    try {
+      return new ApiResult("Lấy thông tin thành công", await this.students.getByCode(code));
+    } catch (e) {
+      rethrowError(e);
+    }
   }
 
   /** Thông tin 1 sinh viên. */
   @Get(":studentCode")
   @UseGuards(StudentAuthGuard)
   async getOne(@Param("studentCode") studentCode: string) {
-    return new ApiResult("Lấy thông tin sinh viên thành công", await this.students.getByCode(studentCode));
+    try {
+      return new ApiResult("Lấy thông tin sinh viên thành công", await this.students.getByCode(studentCode));
+    } catch (e) {
+      rethrowError(e);
+    }
   }
 
   /** Cập nhật hồ sơ + avatar (multipart: file field `avatar`). */
@@ -49,14 +61,22 @@ export class StudentsController {
     @Body() dto: UpdateProfileDto,
     @UploadedFile() avatar?: UploadedFilePayload,
   ) {
-    await this.students.updateProfile(code, dto, avatar);
-    return new ApiResult("Cập nhật thông tin thành công", null);
+    try {
+      await this.students.updateProfile(code, dto, avatar);
+      return new ApiResult("Cập nhật thông tin thành công", null);
+    } catch (e) {
+      rethrowError(e);
+    }
   }
 
   /** Danh sách thành viên lớp mình (chief). */
   @Get("me/class-members")
   @UseGuards(ChiefAuthGuard)
   async classMembers(@CurrentUser("studentCode") code: string) {
-    return new ApiResult("Lấy danh sách lớp thành công", await this.students.getClassMembers(code));
+    try {
+      return new ApiResult("Lấy danh sách lớp thành công", await this.students.getClassMembers(code));
+    } catch (e) {
+      rethrowError(e);
+    }
   }
 }

@@ -1,5 +1,5 @@
 import { EventsService } from "@app-application/events";
-import { ApiResult, ChiefAuthGuard, CurrentUser, StudentAuthGuard } from "@app-common";
+import { ApiResult, ChiefAuthGuard, CurrentUser, rethrowError, StudentAuthGuard } from "@app-common";
 import { UploadedFilePayload } from "@app-type";
 import {
   Body,
@@ -27,8 +27,12 @@ export class EventsController {
   @Get()
   @UseGuards(StudentAuthGuard)
   async list(@Query("limit") limit?: string) {
-    const n = limit ? parseInt(limit, 10) : undefined;
-    return new ApiResult("Thành công", await this.events.list(Number.isFinite(n) ? n : undefined));
+    try {
+      const n = limit ? parseInt(limit, 10) : undefined;
+      return new ApiResult("Thành công", await this.events.list(Number.isFinite(n) ? n : undefined));
+    } catch (e) {
+      rethrowError(e);
+    }
   }
 
   /** Check-in sự kiện. */
@@ -39,8 +43,12 @@ export class EventsController {
     @Param("eventCode") eventCode: string,
     @Body("location") location?: string,
   ) {
-    await this.events.checkIn(code, eventCode, location);
-    return new ApiResult("Check in thành công, chúc bạn tham gia sự kiện vui vẻ", null);
+    try {
+      await this.events.checkIn(code, eventCode, location);
+      return new ApiResult("Check in thành công, chúc bạn tham gia sự kiện vui vẻ", null);
+    } catch (e) {
+      rethrowError(e);
+    }
   }
 
   // ---------- Chief ----------
@@ -55,8 +63,12 @@ export class EventsController {
     @Body("content") content: string,
     @UploadedFile() thumb?: UploadedFilePayload,
   ) {
-    const event = await this.events.create(code, title ?? "", content ?? "", thumb);
-    return new ApiResult("Thành công", event);
+    try {
+      const event = await this.events.create(code, title ?? "", content ?? "", thumb);
+      return new ApiResult("Thành công", event);
+    } catch (e) {
+      rethrowError(e);
+    }
   }
 
   @Delete(":eventCode")
@@ -66,21 +78,33 @@ export class EventsController {
     @CurrentUser("studentCode") code: string,
     @CurrentUser("role") role: number,
   ) {
-    await this.events.remove(eventCode, code, role);
-    return new ApiResult("Thành công", null);
+    try {
+      await this.events.remove(eventCode, code, role);
+      return new ApiResult("Thành công", null);
+    } catch (e) {
+      rethrowError(e);
+    }
   }
 
   /** QR check-in PNG (stream trực tiếp — không ghi đĩa như legacy). */
   @Get(":eventCode/qr")
   @UseGuards(ChiefAuthGuard)
   async qr(@Param("eventCode") eventCode: string, @Res() res: Response) {
-    const png = await this.events.qrPng(eventCode);
-    res.type("image/png").send(png);
+    try {
+      const png = await this.events.qrPng(eventCode);
+      res.type("image/png").send(png);
+    } catch (e) {
+      rethrowError(e);
+    }
   }
 
   @Get(":eventCode/attendance")
   @UseGuards(ChiefAuthGuard)
   async attendance(@Param("eventCode") eventCode: string) {
-    return new ApiResult("Thành công", await this.events.attendance(eventCode));
+    try {
+      return new ApiResult("Thành công", await this.events.attendance(eventCode));
+    } catch (e) {
+      rethrowError(e);
+    }
   }
 }

@@ -1,5 +1,6 @@
+import { AppException, SYS_ERRORS } from "@app-common";
 import { PrismaService } from "@app-infra/prisma";
-import { Injectable } from "@nestjs/common";
+import { HttpStatus, Injectable } from "@nestjs/common";
 
 @Injectable()
 export class SystemService {
@@ -8,7 +9,7 @@ export class SystemService {
   /** Học kỳ hiện tại (nhhk), vd '20241'. */
   async getCurrentSemester(): Promise<string> {
     const config = await this.prisma.systemConfig.findFirst({ orderBy: { id: "asc" } });
-    if (!config) throw new Error("Chưa cấu hình học kỳ (system_configs rỗng)");
+    if (!config) throw new AppException(HttpStatus.INTERNAL_SERVER_ERROR, SYS_ERRORS.CONFIG_MISSING);
     return config.semesterCode;
   }
 

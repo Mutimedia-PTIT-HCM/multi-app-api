@@ -1,5 +1,5 @@
 import { AuthService } from "@app-application/auth";
-import { ApiResult, StudentAuthGuard } from "@app-common";
+import { ApiResult, rethrowError, StudentAuthGuard } from "@app-common";
 import { Body, Controller, Get, Post, UseGuards } from "@nestjs/common";
 import { LoginDto } from "./dto/login.dto";
 
@@ -10,13 +10,21 @@ export class AuthController {
   /** Đăng nhập sinh viên — trả student token (+ chief token nếu có quyền). */
   @Post("student/login")
   async loginStudent(@Body() dto: LoginDto) {
-    return new ApiResult("Đăng nhập thành công", await this.auth.login(dto.studentCode, dto.password));
+    try {
+      return new ApiResult("Đăng nhập thành công", await this.auth.login(dto.studentCode, dto.password));
+    } catch (e) {
+      rethrowError(e);
+    }
   }
 
   /** Đăng nhập ban cán sự — chỉ trả chief token. */
   @Post("chief/login")
   async loginChief(@Body() dto: LoginDto) {
-    return new ApiResult("Đăng nhập thành công", await this.auth.loginChief(dto.studentCode, dto.password));
+    try {
+      return new ApiResult("Đăng nhập thành công", await this.auth.loginChief(dto.studentCode, dto.password));
+    } catch (e) {
+      rethrowError(e);
+    }
   }
 
   /** Kiểm tra student token còn hiệu lực. */

@@ -1,8 +1,8 @@
-import { PRIVILEGED_ROLES } from "@app-common";
+import { AppException, PRIVILEGED_ROLES, STUDENT_ERRORS, TRAINING_POINT_ERRORS } from "@app-common";
 import { PrismaService } from "@app-infra/prisma";
 import { StorageService } from "@app-infra/storage";
 import { UploadedFilePayload } from "@app-type";
-import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from "@nestjs/common";
+import { HttpStatus, Injectable } from "@nestjs/common";
 
 @Injectable()
 export class TrainingPointsService {
@@ -29,9 +29,9 @@ export class TrainingPointsService {
   async selfAssess(studentCode: string, formId: number, point: number) {
     await this.assertClassOpen(studentCode);
     const form = await this.prisma.trainingPointForm.findUnique({ where: { id: formId } });
-    if (!form) throw new NotFoundException("Không tìm thấy tiêu chí");
+    if (!form) throw new AppException(HttpStatus.NOT_FOUND, TRAINING_POINT_ERRORS.FORM_NOT_FOUND);
     if (form.maxPoint != null && point > form.maxPoint) {
-      throw new BadRequestException("Điểm vượt quá mức quy định");
+      throw new AppException(HttpStatus.BAD_REQUEST, TRAINING_POINT_ERRORS.POINTS_EXCEED_MAX);
     }
     await this.prisma.trainingPoint.upsert({
       where: { formId_studentCode: { formId, studentCode } },
@@ -118,9 +118,9 @@ export class TrainingPointsService {
   async reviewPoint(chiefCode: string, studentCode: string, formId: number, point: number) {
     await this.assertSameClass(chiefCode, studentCode);
     const form = await this.prisma.trainingPointForm.findUnique({ where: { id: formId } });
-    if (!form) throw new NotFoundException("Không tìm thấy tiêu chí");
+    if (!form) throw new AppException(HttpStatus.NOT_FOUND, TRAINING_POINT_ERRORS.FORM_NOT_FOUND);
     if (form.maxPoint != null && point > form.maxPoint) {
-      throw new BadRequestException("Điểm vượt quá mức quy định");
+      throw new AppException(HttpStatus.BAD_REQUEST, TRAINING_POINT_ERRORS.POINTS_EXCEED_MAX);
     }
     await this.prisma.trainingPoint.upsert({
       where: { formId_studentCode: { formId, studentCode } },
@@ -131,7 +131,7 @@ export class TrainingPointsService {
 
   async deletePoint(chiefCode: string, pointId: number) {
     const point = await this.prisma.trainingPoint.findUnique({ where: { id: pointId } });
-    if (!point) throw new NotFoundException("Không tìm thấy điểm");
+    if (!point) throw new AppException(HttpStatus.NOT_FOUND, TRAINING_POINT_ERRORS.POINT_NOT_FOUND);
     await this.assertSameClass(chiefCode, point.studentCode);
     await this.prisma.trainingPoint.delete({ where: { id: pointId } });
   }
@@ -139,7 +139,7 @@ export class TrainingPointsService {
   /** Reset điểm + cert cả lớp — chỉ role 3/4 (giữ nguyên legacy). */
   async resetClass(chiefCode: string, chiefRole: number) {
     if (!PRIVILEGED_ROLES.includes(chiefRole)) {
-      throw new ForbiddenException("Không có quyền thực hiện");
+      throw new AppException(HttpStatus.FORBIDDEN, TRAINING_POINT_ERRORS.FORBIDDEN);
     }
     const classCode = await this.getMyClassCode(chiefCode);
     const certs = await this.prisma.certificate.findMany({
@@ -163,14 +163,15 @@ export class TrainingPointsService {
       where: { studentCode },
       select: { classCode: true },
     });
-    if (!me) throw new NotFoundException("Không tìm thấy sinh viên");
+    if (!me) throw new AppException(HttpStatus.NOT_FOUND, STUDENT_ERRORS.NOT_FOUND);
     return me.classCode;
   }
 
   private async assertClassOpen(studentCode: string) {
     const classCode = await this.getMyClassCode(studentCode);
     const status = await this.prisma.trainingPointStatus.findUnique({ where: { classCode } });
-    if (!status?.isOpen) throw new BadRequestException("Đã khoá chấm điểm");
+    if (!status?.isOpen)
+      throw new AppException(HttpStatus.BAD_REQUEST, TRAINING_POINT_ERRORS.SUBMISSION_CLOSED);
   }
 
   private async assertSameClass(chiefCode: string, studentCode: string) {
@@ -178,9 +179,9 @@ export class TrainingPointsService {
       this.prisma.student.findUnique({ where: { studentCode: chiefCode }, select: { classCode: true } }),
       this.prisma.student.findUnique({ where: { studentCode }, select: { classCode: true } }),
     ]);
-    if (!student) throw new NotFoundException("Không tìm thấy sinh viên");
+    if (!student) throw new AppException(HttpStatus.NOT_FOUND, STUDENT_ERRORS.NOT_FOUND);
     if (chief?.classCode !== student.classCode) {
-      throw new ForbiddenException("Sinh viên không thuộc lớp của bạn");
+      throw new AppException(HttpStatus.FORBIDDEN, TRAINING_POINT_ERRORS.STUDENT_NOT_IN_CLASS);
     }
   }
 }

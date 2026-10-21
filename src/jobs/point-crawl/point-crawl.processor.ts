@@ -1,8 +1,8 @@
 import { SystemService } from "@app-application/system";
-import { POINT_CRAWL_QUEUE } from "@app-common";
+import { POINT_CRAWL_QUEUE, UisUnreachableError } from "@app-common";
 import { PrismaService } from "@app-infra/prisma";
 import { PushService } from "@app-infra/push";
-import { UisService, UisSessionService, UisUnreachableError } from "@app-infra/uis";
+import { UisService, UisSessionService } from "@app-infra/uis";
 import { UisSession } from "@app-type";
 import { InjectQueue, Processor, WorkerHost } from "@nestjs/bullmq";
 import { Logger, OnModuleInit } from "@nestjs/common";

@@ -1,5 +1,5 @@
 import { ProductsService } from "@app-application/products";
-import { ApiResult, CurrentUser, StudentAuthGuard } from "@app-common";
+import { ApiResult, CurrentUser, rethrowError, StudentAuthGuard } from "@app-common";
 import { UploadedFilePayload } from "@app-type";
 import {
   Body,
@@ -31,32 +31,44 @@ export class ProductsController {
     @Body() body: Record<string, string>,
     @UploadedFiles() files: UploadedFilePayload[],
   ) {
-    const product = await this.products.create(
-      code,
-      {
-        name: body.name ?? "",
-        price: body.price,
-        stock: parseInt(body.stock ?? "0", 10) || 0,
-        description: body.description,
-      },
-      files ?? [],
-    );
-    return new ApiResult("Đăng ấn phẩm thành công", product);
+    try {
+      const product = await this.products.create(
+        code,
+        {
+          name: body.name ?? "",
+          price: body.price,
+          stock: parseInt(body.stock ?? "0", 10) || 0,
+          description: body.description,
+        },
+        files ?? [],
+      );
+      return new ApiResult("Đăng ấn phẩm thành công", product);
+    } catch (e) {
+      rethrowError(e);
+    }
   }
 
   /** Danh sách ấn phẩm — ?codes=a,b,c lọc theo mã. */
   @Get("products")
   async list(@Query("codes") codes?: string) {
-    const list = codes
-      ?.split(",")
-      .map((s) => s.trim())
-      .filter(Boolean);
-    return new ApiResult("Lấy ấn phẩm thành công", await this.products.list(list));
+    try {
+      const list = codes
+        ?.split(",")
+        .map((s) => s.trim())
+        .filter(Boolean);
+      return new ApiResult("Lấy ấn phẩm thành công", await this.products.list(list));
+    } catch (e) {
+      rethrowError(e);
+    }
   }
 
   @Get("products/:productCode")
   async getOne(@Param("productCode") productCode: string) {
-    return new ApiResult("Lấy ấn phẩm thành công", await this.products.getByCode(productCode));
+    try {
+      return new ApiResult("Lấy ấn phẩm thành công", await this.products.getByCode(productCode));
+    } catch (e) {
+      rethrowError(e);
+    }
   }
 
   // ---------- Orders ----------
@@ -64,40 +76,64 @@ export class ProductsController {
   /** Đặt hàng: [{productCode, quantity, note}] */
   @Post("orders")
   async placeOrders(@CurrentUser("studentCode") code: string, @Body() items: CreateOrderDto[]) {
-    await this.products.placeOrders(code, items);
-    return new ApiResult(
-      "Đặt mua thành công. Người bán ấn phẩm sẽ liên hệ với bạn sau khi thấy đơn hàng của bạn",
-      null,
-    );
+    try {
+      await this.products.placeOrders(code, items);
+      return new ApiResult(
+        "Đặt mua thành công. Người bán ấn phẩm sẽ liên hệ với bạn sau khi thấy đơn hàng của bạn",
+        null,
+      );
+    } catch (e) {
+      rethrowError(e);
+    }
   }
 
   /** Đơn mình đã mua. */
   @Get("orders/mine")
   async myOrders(@CurrentUser("studentCode") code: string) {
-    return new ApiResult("Lấy đơn hàng thành công", await this.products.myOrders(code));
+    try {
+      return new ApiResult("Lấy đơn hàng thành công", await this.products.myOrders(code));
+    } catch (e) {
+      rethrowError(e);
+    }
   }
 
   /** Đơn người khác mua ấn phẩm mình. */
   @Get("orders/received")
   async receivedOrders(@CurrentUser("studentCode") code: string) {
-    return new ApiResult("Lấy đơn hàng thành công", await this.products.receivedOrders(code));
+    try {
+      return new ApiResult("Lấy đơn hàng thành công", await this.products.receivedOrders(code));
+    } catch (e) {
+      rethrowError(e);
+    }
   }
 
   @Delete("orders/:orderCode")
   async cancel(@CurrentUser("studentCode") code: string, @Param("orderCode") orderCode: string) {
-    await this.products.cancel(orderCode, code);
-    return new ApiResult("Thành công", null);
+    try {
+      await this.products.cancel(orderCode, code);
+      return new ApiResult("Thành công", null);
+    } catch (e) {
+      rethrowError(e);
+    }
   }
 
   @Post("orders/:orderCode/confirm")
   async confirm(@CurrentUser("studentCode") code: string, @Param("orderCode") orderCode: string) {
-    await this.products.confirm(orderCode, code);
-    return new ApiResult("Thành công", null);
+    try {
+      await this.products.confirm(orderCode, code);
+      return new ApiResult("Thành công", null);
+    } catch (e) {
+      rethrowError(e);
+    }
   }
 
   @Post("orders/:orderCode/done")
   async done(@CurrentUser("studentCode") code: string, @Param("orderCode") orderCode: string) {
-    await this.products.done(orderCode, code);
-    return new ApiResult("Thành công", null);
+    try {
+      await this.products.done(orderCode, code);
+      return new ApiResult("Thành công", null);
+    } catch (e) {
+      rethrowError(e);
+    }
   }
 }

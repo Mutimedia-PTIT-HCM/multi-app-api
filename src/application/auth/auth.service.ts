@@ -1,9 +1,9 @@
-import { NO_CHIEF_ROLES, STUDENT_ROLE } from "@app-common";
+import { AppException, AUTH_ERRORS, NO_CHIEF_ROLES, STUDENT_ROLE, UIS_ERRORS } from "@app-common";
 import { PrismaService } from "@app-infra/prisma";
 import { StorageService } from "@app-infra/storage";
 import { UisService, UisSessionService } from "@app-infra/uis";
 import { TokenScope } from "@app-type";
-import { BadRequestException, Injectable, UnauthorizedException } from "@nestjs/common";
+import { HttpStatus, Injectable } from "@nestjs/common";
 import { JwtService } from "@nestjs/jwt";
 import { Student } from "@prisma/client";
 
@@ -21,13 +21,13 @@ export class AuthService {
     const studentCode = studentCodeRaw.toUpperCase();
     const result = await this.uis.login(studentCode, password);
     if (result.status === "unsupported") {
-      throw new BadRequestException("Rất tiếc. Ứng dụng chúng tôi hiện chưa phục vụ ngành khác");
+      throw new AppException(HttpStatus.BAD_REQUEST, AUTH_ERRORS.UNSUPPORTED_FACULTY);
     }
     if (result.status === "invalid") {
-      throw new BadRequestException("Sai thông tin đăng nhập.");
+      throw new AppException(HttpStatus.BAD_REQUEST, AUTH_ERRORS.INVALID_CREDENTIALS);
     }
     if (result.status === "unreachable") {
-      throw new BadRequestException("Không kết nối được máy chủ trường, vui lòng thử lại sau");
+      throw new AppException(HttpStatus.SERVICE_UNAVAILABLE, UIS_ERRORS.UNREACHABLE);
     }
 
     const info = await this.uis.getStudentInfo(result.session);
@@ -63,17 +63,15 @@ export class AuthService {
     const studentCode = studentCodeRaw.toUpperCase();
     const result = await this.uis.login(studentCode, password);
     if (result.status === "unsupported") {
-      throw new BadRequestException("Rất tiếc. Ứng dụng chúng tôi hiện chưa phục vụ ngành khác");
+      throw new AppException(HttpStatus.BAD_REQUEST, AUTH_ERRORS.UNSUPPORTED_FACULTY);
     }
     if (result.status !== "ok") {
-      throw new BadRequestException(
-        "Sai thông tin đăng nhập. (Vui lòng sử dụng tài khoản và mật khẩu của UIS)",
-      );
+      throw new AppException(HttpStatus.BAD_REQUEST, AUTH_ERRORS.INVALID_CREDENTIALS);
     }
 
     const student = await this.prisma.student.findUnique({ where: { studentCode } });
     if (!student || student.role === STUDENT_ROLE) {
-      throw new UnauthorizedException("Rất tiếc! Tài khoản của bạn không có quyền truy cập.");
+      throw new AppException(HttpStatus.UNAUTHORIZED, AUTH_ERRORS.ACCESS_DENIED);
     }
 
     const info = await this.uis.getStudentInfo(result.session);
