@@ -18,7 +18,8 @@
     "db:push": "prisma db push",
     "db:seed": "tsx --env-file=.env prisma/seed.ts",
     "dev": "tsc -p tsconfig.build.json --watch --preserveWatchOutput & (while sleep 1; do node scripts/fix-dist-paths.js >/dev/null; done) & node --watch dist/main.js",
-    "postinstall": "prisma generate"
+    "postinstall": "prisma generate",
+    "prepare": "git config core.hooksPath .githooks || true"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.700.0",

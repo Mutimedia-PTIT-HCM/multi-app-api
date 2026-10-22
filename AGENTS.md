@@ -103,6 +103,9 @@ pnpm typecheck && pnpm lint        # verify trước khi commit
 pnpm audit                         # security check — phải 0 vulnerabilities
 ```
 
+Pre-push hook (`.githooks/pre-push`) tự chạy typecheck → lint → prisma validate → audit; được cài tự động qua `prepare` script khi `pnpm install` (`core.hooksPath`). Bypass khẩn cấp: `git push --no-verify`. CI (`.github/workflows/ci.yml`) chạy cùng bộ check + `pnpm build` trên mọi PR/push vào `main`.
+```
+
 Docs API: `http://localhost:3000/api/docs` (Swagger).
 
 ## Upload flow (2 bước, presigned)
