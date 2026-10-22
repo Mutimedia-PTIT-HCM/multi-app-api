@@ -1,6 +1,5 @@
 import { applyDecorators, Type } from "@nestjs/common";
 import { ApiExtraModels, ApiResponse, getSchemaPath } from "@nestjs/swagger";
-import { ApiResultDto } from "./api-result.dto";
 import { PaginationMetaDto } from "./pagination-meta.dto";
 
 export interface ApiDataResponseOptions {
@@ -37,12 +36,17 @@ export function ApiDataResponse(opts: ApiDataResponseOptions = {}) {
           : { $ref: getSchemaPath(opts.type) };
 
   return applyDecorators(
-    ApiExtraModels(ApiResultDto, PaginationMetaDto, ...(opts.type ? [opts.type] : [])),
+    ApiExtraModels(PaginationMetaDto, ...(opts.type ? [opts.type] : [])),
     ApiResponse({
       status: opts.status ?? 200,
       description: opts.description,
       schema: {
-        allOf: [{ $ref: getSchemaPath(ApiResultDto) }, { type: "object", properties: { data } }],
+        type: "object",
+        properties: {
+          error: { type: "boolean", example: false },
+          message: { type: "string", example: "Thành công" },
+          data,
+        },
       },
     }),
   );
