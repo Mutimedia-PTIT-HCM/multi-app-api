@@ -12,3 +12,9 @@ stderr.log
 # build artifacts leaked next to sources
 prisma/seed.js
 prisma/seed.js.map
+
+# secrets — KHÔNG commit
+secrets/
+service-account.json
+*.p8
+fcm-config.json

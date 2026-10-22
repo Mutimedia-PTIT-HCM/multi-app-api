@@ -14,7 +14,7 @@ services:
     volumes:
       - mysql_v2_data:/var/lib/mysql
       # Mount DB legacy để chạy 2 DB song song (import data): bỏ comment nếu cần
-      # - ./legacy/multidb.sql:/docker-entrypoint-initdb.d/multidb.sql
+      # - ./db/multidb.sql:/docker-entrypoint-initdb.d/multidb.sql
     command: --character-set-server=utf8mb4 --collation-server=utf8mb4_general_ci
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-proot_multimedia_2026"]

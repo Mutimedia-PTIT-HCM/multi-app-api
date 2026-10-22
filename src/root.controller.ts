@@ -15,7 +15,7 @@ export class RootController {
   @Get("/app-ads.txt")
   @ApiExcludeEndpoint()
   adsTxt(@Res() res: Response) {
-    const file = join(process.cwd(), "legacy", "public", "ads", "app-ads.txt");
+    const file = join(process.cwd(), "public", "ads", "app-ads.txt");
     if (existsSync(file)) {
       res.type("text/plain").send(readFileSync(file, "utf8"));
     } else {
