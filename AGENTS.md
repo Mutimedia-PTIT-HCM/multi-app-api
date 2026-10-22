@@ -81,25 +81,26 @@ legacy/                   # code Express cũ + multidb.sql — READ ONLY
 - Socket: gateway yêu cầu JWT trong `handshake.auth.token`; giữ event name legacy `LOGIN`, `SEND_MESSAGE_TO_RECEIVER`, `NEW_MESSAGE`.
 - FCM: gửi theo topic (`PushService.sendToTopics`), topic = mssv / malop — client tự subscribe.
 - KHÔNG commit secrets (`.env`, `service-account.json`, `*.p8`). `.env.example` là mẫu duy nhất được commit.
-- Dependencies: sau khi `npm install <pkg>` BẮT BUỘC chạy `npm audit` — phải về `0 vulnerabilities` trước khi commit. Nếu vuln ở transitive dep bị pin exact → dùng `overrides` trong package.json (đã có sẵn cho `deepmerge-ts`, `js-yaml`). Chỉ nâng major version khi tương thích (kiểm tra peerDependencies trước); không thêm dep mới nếu nó kéo theo vuln không vá được. Xoá dep không dùng (vd `tsc-alias` đã xoá vì `fix-dist-paths.js` thay thế).
+- Package manager là **pnpm** (pin `packageManager` trong package.json) — KHÔNG dùng `npm install`/`npm run`, dùng `pnpm add`/`pnpm <script>`. Sau khi `pnpm add <pkg>` BẮT BUỘC chạy `pnpm audit` — phải về 0 vulnerabilities trước khi commit. Vuln ở transitive dep bị pin exact → `overrides` trong `pnpm-workspace.yaml` (đã có `deepmerge-ts`, `js-yaml`). Chỉ nâng major version khi tương thích (kiểm tra peerDependencies trước); không thêm dep mới nếu kéo theo vuln không vá được. Xoá dep không dùng. Dep có build script (esbuild, prisma…) phải khai trong `allowBuilds` của `pnpm-workspace.yaml` — pnpm 11 chặn build script mặc định (`strictDepBuilds`).
 
 ## Lưu ý TypeScript 7
 
 - TS7 chưa có compiler API → **không dùng** `nest build`/`nest start`; build trực tiếp `tsc -p tsconfig.build.json`.
-- `tsx`/esbuild không emit `design:paramtypes` → dev dùng `tsc --watch` + `node --watch` (script `npm run dev`), không dùng `tsx src/main.ts`.
+- `tsx`/esbuild không emit `design:paramtypes` → dev dùng `tsc --watch` + `node --watch` (script `pnpm dev`), không dùng `tsx src/main.ts`.
 - Lint/format bằng **Biome** (typescript-eslint chưa tương thích TS7). Biome cần `unsafeParameterDecoratorsEnabled: true` cho `@Body()`… — đã bật trong `biome.json`. KHÔNG bật `useImportType` — sẽ phá DI.
 
 ## Commands
 
 ```bash
 docker compose up -d mysql redis   # infra local
-npm install
-npm run prisma:migrate             # dev: migrate dev | prod: prisma:deploy
-npm run db:seed                    # seed system_configs + positions
-npm run build                      # tsc → dist/
-npm start                          # node dist/main.js  (port 3000)
-npm run dev                        # tsc --watch + node --watch
-npm run typecheck && npm run lint  # verify trước khi commit
+pnpm install
+pnpm prisma:migrate                # dev: migrate dev | prod: prisma:deploy
+pnpm db:seed                       # seed system_configs + positions
+pnpm build                         # tsc → dist/
+pnpm start                         # node dist/main.js  (port 3000)
+pnpm dev                           # tsc --watch + node --watch
+pnpm typecheck && pnpm lint        # verify trước khi commit
+pnpm audit                         # security check — phải 0 vulnerabilities
 ```
 
 Docs API: `http://localhost:3000/api/docs` (Swagger).
