@@ -18,6 +18,10 @@ pnpm install               # tự generate Prisma Client (postinstall)
                            # + tự cài pre-push hook (prepare script)
 ```
 
+Dùng **VS Code**: mở folder → chấp nhận cài **Recommended extensions** (Biome,
+Prisma, Docker…) — settings đã cấu hình format-on-save bằng Biome và dùng đúng
+TypeScript của workspace. Không cài Prettier/ESLint (project không dùng).
+
 ## 3. Cấu hình `.env`
 
 ```bash

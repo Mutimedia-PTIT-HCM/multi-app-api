@@ -1,0 +1,44 @@
+{
+  "[json]": {
+    "editor.defaultFormatter": "biomejs.biome"
+  },
+  "[jsonc]": {
+    "editor.defaultFormatter": "biomejs.biome"
+  },
+  "[typescript]": {
+    "editor.defaultFormatter": "biomejs.biome"
+  },
+  "editor.codeActionsOnSave": {
+    "source.fixAll.biome": "explicit",
+    "source.organizeImports.biome": "explicit"
+  },
+  // ===== Format & Lint — Biome duy nhất (project KHÔNG dùng Prettier/ESLint) =====
+  "editor.defaultFormatter": "biomejs.biome",
+  "editor.formatOnSave": true,
+  "eslint.enable": false,
+  "files.eol": "\n",
+  // ===== Tránh nhiễu =====
+  "files.exclude": {
+    "**/dist": true,
+    "**/node_modules": true
+  },
+  "files.insertFinalNewline": true,
+  // ===== Files — thống nhất whitespace/EOL =====
+  "files.trimTrailingWhitespace": true,
+  // ===== Tắt format/check trùng từ ext khác =====
+  "prettier.enable": false,
+  // ===== Prisma =====
+  "prisma.prismaFmtBinPath": "",
+  "search.exclude": {
+    "**/pnpm-lock.yaml": true
+  },
+  "js/ts.tsdk.promptToUseWorkspaceVersion": true,
+  // ===== TypeScript — bắt buộc dùng bản workspace (TS7), không dùng bản bundled =====
+  "js/ts.tsdk.path": "node_modules/typescript/lib",
+
+  // ===== Indent & line width — khớp biome.json (indentWidth 2, lineWidth 110) =====
+  "editor.tabSize": 2,
+  "editor.insertSpaces": true,
+  "editor.detectIndentation": false,
+  "editor.rulers": [110]
+}

@@ -1,0 +1,6 @@
+#!/bin/sh
+# Format staged .ts files bằng Biome trước khi commit (khớp files.includes của biome.json).
+FILES=$(git diff --cached --name-only --diff-filter=ACMR -- '*.ts' | tr '\n' ' ')
+[ -z "$FILES" ] && exit 0
+pnpm exec biome check --write $FILES || exit 1
+git add $FILES

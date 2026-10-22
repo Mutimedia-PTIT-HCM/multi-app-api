@@ -1,0 +1,14 @@
+{
+  "recommendations": [
+    "biomejs.biome",
+    "Prisma.prisma",
+    "ms-azuretools.vscode-docker",
+    "eamodio.gitlens",
+    "usernamehw.errorlens"
+  ],
+  "unwantedRecommendations": [
+    "esbenp.prettier-vscode",
+    "dbaeumer.vscode-eslint",
+    "ms-vscode.vscode-typescript-tslint-plugin"
+  ]
+}
