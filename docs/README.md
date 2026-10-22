@@ -10,6 +10,7 @@ Tài liệu nghiệp vụ + kế hoạch refactor cho backend của ứng dụng
 | [04-codebase-audit.md](04-codebase-audit.md)           | Đánh giá code hiện tại: bug, bảo mật, kiến trúc            |
 | [05-tech-stack-analysis.md](05-tech-stack-analysis.md) | Phân tích lựa chọn: NestJS vs Next.js + Supabase           |
 | [06-refactor-plan.md](06-refactor-plan.md)             | Kế hoạch refactor từng bước                                |
+| [07-mapping-legacy-v2.md](07-mapping-legacy-v2.md)     | Bảng mapping legacy↔v2: API endpoint, bảng SQL, job nền    |
 
 ## TL;DR
 
