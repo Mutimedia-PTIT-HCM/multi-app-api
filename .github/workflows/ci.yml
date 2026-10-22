@@ -8,6 +8,9 @@ on:
 jobs:
   quality:
     runs-on: ubuntu-latest
+    env:
+      # prisma validate/generate cần resolve env("DATABASE_URL") — giá trị giả, không connect
+      DATABASE_URL: mysql://ci:ci@localhost:3306/ci
     steps:
       - uses: actions/checkout@v4
 
