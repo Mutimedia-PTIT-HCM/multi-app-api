@@ -3,7 +3,7 @@
 set -e
 echo "pre-push: typecheck..."
 pnpm typecheck
-echo "pre-push: lint..."
+echo "pre-push: lint + format check..."
 pnpm lint
 echo "pre-push: prisma validate..."
 pnpm prisma validate
