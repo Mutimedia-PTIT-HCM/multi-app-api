@@ -81,6 +81,7 @@ legacy/                   # code Express cũ + multidb.sql — READ ONLY
 - Socket: gateway yêu cầu JWT trong `handshake.auth.token`; giữ event name legacy `LOGIN`, `SEND_MESSAGE_TO_RECEIVER`, `NEW_MESSAGE`.
 - FCM: gửi theo topic (`PushService.sendToTopics`), topic = mssv / malop — client tự subscribe.
 - KHÔNG commit secrets (`.env`, `service-account.json`, `*.p8`). `.env.example` là mẫu duy nhất được commit.
+- Dependencies: sau khi `npm install <pkg>` BẮT BUỘC chạy `npm audit` — phải về `0 vulnerabilities` trước khi commit. Nếu vuln ở transitive dep bị pin exact → dùng `overrides` trong package.json (đã có sẵn cho `deepmerge-ts`, `js-yaml`). Chỉ nâng major version khi tương thích (kiểm tra peerDependencies trước); không thêm dep mới nếu nó kéo theo vuln không vá được. Xoá dep không dùng (vd `tsc-alias` đã xoá vì `fix-dist-paths.js` thay thế).
 
 ## Lưu ý TypeScript 7
 

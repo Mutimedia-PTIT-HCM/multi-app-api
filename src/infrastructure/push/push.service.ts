@@ -1,7 +1,8 @@
 import { IPushService } from "@app-contracts";
 import { Injectable, Logger } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
-import admin from "firebase-admin";
+import { cert, initializeApp } from "firebase-admin/app";
+import { getMessaging, Messaging } from "firebase-admin/messaging";
 import { existsSync, readFileSync } from "fs";
 import { resolve } from "path";
 
@@ -12,19 +13,18 @@ import { resolve } from "path";
 @Injectable()
 export class PushService implements IPushService {
   private readonly logger = new Logger(PushService.name);
-  private readonly enabled: boolean;
+  private readonly messaging?: Messaging;
 
   constructor(config: ConfigService) {
     const credPath = config.get<string>("FIREBASE_CREDENTIAL_PATH");
     const abs = credPath ? resolve(credPath) : null;
     if (abs && existsSync(abs)) {
-      admin.initializeApp({
-        credential: admin.credential.cert(JSON.parse(readFileSync(abs, "utf8"))),
+      const app = initializeApp({
+        credential: cert(JSON.parse(readFileSync(abs, "utf8"))),
       });
-      this.enabled = true;
+      this.messaging = getMessaging(app);
       this.logger.log("FCM: enabled");
     } else {
-      this.enabled = false;
       this.logger.warn("FCM: disabled (không tìm thấy credential)");
     }
   }
@@ -36,10 +36,10 @@ export class PushService implements IPushService {
     topics: string[],
     data?: Record<string, string>,
   ): Promise<void> {
-    if (!this.enabled || topics.length === 0) return;
+    if (!this.messaging || topics.length === 0) return;
     const condition = topics.map((t) => `'${t}' in topics`).join(" || ");
     try {
-      const res = await admin.messaging().send({
+      const res = await this.messaging.send({
         notification: { title, body },
         data: data ?? {},
         condition,
