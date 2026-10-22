@@ -7,16 +7,16 @@ export class SubjectPointDto {
   subjectName: string;
   @ApiProperty()
   credits: number;
-  @ApiProperty({ nullable: true })
+  @ApiProperty({ type: "number", nullable: true })
   attendance: number | null;
-  @ApiProperty({ nullable: true })
+  @ApiProperty({ type: "number", nullable: true })
   midterm: number | null;
-  @ApiProperty({ nullable: true })
+  @ApiProperty({ type: "number", nullable: true })
   exercise: number | null;
-  @ApiProperty({ nullable: true })
+  @ApiProperty({ type: "number", nullable: true })
   practice: number | null;
-  @ApiProperty({ nullable: true })
+  @ApiProperty({ type: "number", nullable: true })
   exam: number | null;
-  @ApiProperty({ nullable: true })
+  @ApiProperty({ type: "number", nullable: true })
   final: number | null;
 }

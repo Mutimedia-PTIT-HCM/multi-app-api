@@ -5,12 +5,12 @@ export class ClassMemberDto {
   studentCode: string;
   @ApiProperty()
   classCode: string;
-  @ApiProperty({ nullable: true })
+  @ApiProperty({ type: "string", nullable: true })
   fullName: string | null;
-  @ApiProperty({ nullable: true })
+  @ApiProperty({ type: "string", nullable: true })
   birthDate: string | null;
-  @ApiProperty({ nullable: true })
+  @ApiProperty({ type: "string", nullable: true })
   avatarKey: string | null;
-  @ApiProperty({ nullable: true })
+  @ApiProperty({ type: "string", nullable: true })
   avatarUrl: string | null;
 }

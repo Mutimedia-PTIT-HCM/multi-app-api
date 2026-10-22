@@ -3,18 +3,18 @@ import { ApiProperty } from "@nestjs/swagger";
 export class TeacherDto {
   @ApiProperty()
   teacherCode: string;
-  @ApiProperty({ nullable: true })
+  @ApiProperty({ type: "string", nullable: true })
   fullName: string | null;
-  @ApiProperty({ nullable: true })
+  @ApiProperty({ type: "string", nullable: true })
   birthDate: string | null;
-  @ApiProperty({ nullable: true })
+  @ApiProperty({ type: "string", nullable: true })
   zalo: string | null;
-  @ApiProperty({ nullable: true })
+  @ApiProperty({ type: "string", nullable: true })
   phone: string | null;
-  @ApiProperty({ nullable: true })
+  @ApiProperty({ type: "string", nullable: true })
   email: string | null;
-  @ApiProperty({ nullable: true })
+  @ApiProperty({ type: "string", nullable: true })
   academicRank: string | null;
-  @ApiProperty({ nullable: true })
+  @ApiProperty({ type: "string", nullable: true })
   degree: string | null;
 }

@@ -8,11 +8,11 @@ export class ProductItemDto {
   sellerCode: string;
   @ApiProperty()
   name: string;
-  @ApiProperty({ nullable: true })
+  @ApiProperty({ type: "string", nullable: true })
   price: string | null;
   @ApiProperty()
   stock: number;
-  @ApiProperty({ nullable: true })
+  @ApiProperty({ type: "string", nullable: true })
   description: string | null;
   @ApiProperty({ type: [String] })
   imageUrls: string[];

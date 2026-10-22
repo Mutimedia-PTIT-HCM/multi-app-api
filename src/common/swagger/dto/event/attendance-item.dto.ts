@@ -10,7 +10,7 @@ export class AttendanceItemDto {
   studentCode: string;
   @ApiProperty()
   checkInAt: Date;
-  @ApiProperty({ nullable: true })
+  @ApiProperty({ type: "string", nullable: true })
   location: string | null;
   @ApiProperty({ type: AttendanceStudentDto })
   student: AttendanceStudentDto;

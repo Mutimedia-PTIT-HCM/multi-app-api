@@ -5,21 +5,21 @@ export class PublicStudentDto {
   studentCode: string;
   @ApiProperty({ example: "D21CQCN01-B" })
   classCode: string;
-  @ApiProperty({ nullable: true, example: "Nguyễn Văn A" })
+  @ApiProperty({ type: "string", nullable: true, example: "Nguyễn Văn A" })
   fullName: string | null;
-  @ApiProperty({ nullable: true })
+  @ApiProperty({ type: "string", nullable: true })
   phone: string | null;
-  @ApiProperty({ nullable: true })
+  @ApiProperty({ type: "string", nullable: true })
   personalEmail: string | null;
-  @ApiProperty({ nullable: true })
+  @ApiProperty({ type: "string", nullable: true })
   facebook: string | null;
   @ApiProperty({ example: 0, description: "0 Nam, 1 Nữ" })
   gender: number;
-  @ApiProperty({ nullable: true, example: "01/01/2003" })
+  @ApiProperty({ type: "string", nullable: true, example: "01/01/2003" })
   birthDate: string | null;
-  @ApiProperty({ nullable: true })
+  @ApiProperty({ type: "string", nullable: true })
   avatarKey: string | null;
-  @ApiProperty({ nullable: true })
+  @ApiProperty({ type: "string", nullable: true })
   avatarUrl: string | null;
   @ApiProperty({ example: 6 })
   role: number;

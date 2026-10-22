@@ -8,13 +8,13 @@ export class EventItemDto {
   title: string;
   @ApiProperty()
   content: string;
-  @ApiProperty({ nullable: true })
+  @ApiProperty({ type: "string", nullable: true })
   eventTime: string | null;
   @ApiProperty()
   isDone: boolean;
-  @ApiProperty({ nullable: true })
+  @ApiProperty({ type: "string", nullable: true })
   thumbnailKey: string | null;
-  @ApiProperty({ nullable: true })
+  @ApiProperty({ type: "string", nullable: true })
   thumbnailUrl: string | null;
   @ApiProperty()
   posterCode: string;

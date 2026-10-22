@@ -1,10 +1,10 @@
 import { ApiProperty } from "@nestjs/swagger";
 
 export class AvatarUserDto {
-  @ApiProperty({ nullable: true })
+  @ApiProperty({ type: "string", nullable: true })
   fullName: string | null;
-  @ApiProperty({ nullable: true })
+  @ApiProperty({ type: "string", nullable: true })
   avatarKey: string | null;
-  @ApiProperty({ nullable: true })
+  @ApiProperty({ type: "string", nullable: true })
   avatarUrl: string | null;
 }

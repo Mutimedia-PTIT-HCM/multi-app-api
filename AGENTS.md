@@ -115,4 +115,5 @@ Docs API: `http://localhost:3000/api/docs` (Swagger).
 
 - Mọi endpoint BẮT BUỘC có `@ApiDataResponse({type | isArray | paginated | primitive})` từ `@app-common` — envelope `{error,message,data}` tự wrap.
 - Response DTO classes nằm trong `common/swagger/dto/<domain>/` (tách khỏi `app-type` interface), 1 class/file, `@ApiProperty` mỗi field.
+- Field có union type (`string | null`, `number | null`, `XDto | null`) BẮT BUỘC khai `type:` trong `@ApiProperty` — union không reflect được `design:type` (thành `Object`), Swagger sẽ render `{...}` thay vì type thật. Vd: `@ApiProperty({ type: "string", nullable: true })`. Property initializer (`page = 1`) cũng không đủ — phải có `: number` annotation.
 - Error envelope `{error:true,code,message,data:null}` tự gắn vào mọi route qua `registerErrorResponses(document)` trong main.ts — không cần decorator tay.

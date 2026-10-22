@@ -8,7 +8,7 @@ export class MessageItemDto {
   senderCode: string;
   @ApiProperty()
   receiverCode: string;
-  @ApiProperty({ nullable: true })
+  @ApiProperty({ type: "string", nullable: true })
   content: string | null;
   @ApiProperty()
   sentAt: Date;
